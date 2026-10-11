@@ -1,0 +1,214 @@
+[
+  {
+    "did": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "observedAt": "2026-10-11T00:20:23Z",
+    "verdict": {
+      "outcome": "RESOLVED",
+      "headline": "Cryptographically controlled via Ed25519.",
+      "statements": [
+        "Self-certifying: not bound to any origin.",
+        "Organization not established."
+      ]
+    },
+    "dimensions": [
+      {
+        "id": "integrity",
+        "label": "Document integrity",
+        "state": "SELF_CERTIFYING",
+        "statement": "The document is derived deterministically from the identifier itself.",
+        "proves": "The document is exactly what the identifier encodes.",
+        "doesNotProve": "Who holds the private key."
+      },
+      {
+        "id": "keys",
+        "label": "Key material",
+        "state": "ESTABLISHED",
+        "statement": "1 verification method validated (Ed25519).",
+        "proves": "The published keys are well-formed points usable for their declared relationships.",
+        "doesNotProve": "Who holds the corresponding private keys."
+      },
+      {
+        "id": "control",
+        "label": "Update authority",
+        "state": "SELF_CERTIFYING",
+        "statement": "Controlled solely by the holder of the Ed25519 private key; the identifier cannot be updated or deactivated.",
+        "proves": "Control is bound to one key by construction.",
+        "doesNotProve": "That the key has not been compromised (did:key cannot rotate)."
+      },
+      {
+        "id": "origin",
+        "label": "Origin binding",
+        "state": "NOT_APPLICABLE",
+        "statement": "did:key is not bound to a web origin.",
+        "proves": "",
+        "doesNotProve": ""
+      },
+      {
+        "id": "transport",
+        "label": "Transport security",
+        "state": "NOT_APPLICABLE",
+        "statement": "No network retrieval was needed.",
+        "proves": "",
+        "doesNotProve": ""
+      },
+      {
+        "id": "history",
+        "label": "Verifiable history",
+        "state": "NOT_APPLICABLE",
+        "statement": "The identifier is immutable; there is no history.",
+        "proves": "",
+        "doesNotProve": ""
+      },
+      {
+        "id": "organization",
+        "label": "Real-world identity",
+        "state": "NOT_ESTABLISHED",
+        "statement": "Organization not established. DID.is does not verify legal identity or ownership claims.",
+        "proves": "",
+        "doesNotProve": "Who operates this identifier."
+      }
+    ]
+  },
+  {
+    "did": "did:web:did.is",
+    "observedAt": null,
+    "verdict": {
+      "headline": "Controlled by the operator of did.is; publishes Ed25519 verification keys.",
+      "outcome": "RESOLVED",
+      "statements": [
+        "Origin verified via DIF configuration.",
+        "No verifiable history.",
+        "Organization not established."
+      ]
+    },
+    "dimensions": [
+      {
+        "id": "integrity",
+        "label": "Document integrity",
+        "state": "ESTABLISHED",
+        "statement": "Retrieved from did.is and its id equals the DID (SHA-256 08a92bc6643f…).",
+        "proves": "This is the document the origin served at resolution time.",
+        "doesNotProve": "That the document was not different before or will not change; did:web keeps no verifiable history."
+      },
+      {
+        "id": "keys",
+        "label": "Key material",
+        "state": "ESTABLISHED",
+        "statement": "1 verification method validated (Ed25519).",
+        "proves": "The published keys are well-formed points usable for their declared relationships.",
+        "doesNotProve": "Who holds the corresponding private keys."
+      },
+      {
+        "id": "control",
+        "label": "Update authority",
+        "state": "NOT_ESTABLISHED",
+        "statement": "Whoever controls the web server and DNS for did.is can replace this document.",
+        "proves": "Nothing cryptographic: did:web has no signed update mechanism.",
+        "doesNotProve": "That the current keys were authorised by the previous ones."
+      },
+      {
+        "id": "origin",
+        "label": "Origin binding",
+        "state": "ESTABLISHED",
+        "statement": "Origin https://did.is verified via DIF Well-Known DID Configuration.",
+        "proves": "The DID's key signed a statement linking it to this exact origin (bidirectional binding).",
+        "doesNotProve": "Who operates the origin."
+      },
+      {
+        "id": "transport",
+        "label": "Transport security",
+        "state": "ESTABLISHED",
+        "statement": "TLS certificate for did.is issued by Let's Encrypt, valid until 2027-01-01 (82 days).",
+        "proves": "The document came from a server holding a publicly-trusted certificate for the host.",
+        "doesNotProve": "That the server operator is the DID subject."
+      },
+      {
+        "id": "history",
+        "label": "Verifiable history",
+        "state": "NOT_ESTABLISHED",
+        "statement": "did:web keeps no verifiable history; DID.is snapshots are observations, not proofs.",
+        "proves": "",
+        "doesNotProve": "What the document contained before this resolution."
+      },
+      {
+        "id": "organization",
+        "label": "Real-world identity",
+        "state": "NOT_ESTABLISHED",
+        "statement": "Organization not established. DID.is does not verify legal identity or ownership claims.",
+        "proves": "",
+        "doesNotProve": "Who operates this identifier."
+      }
+    ]
+  },
+  {
+    "did": "did:web:identity.foundation",
+    "observedAt": "2026-10-11T00:20:32Z",
+    "verdict": {
+      "outcome": "RESOLVED",
+      "headline": "Controlled by the operator of identity.foundation; publishes P-256 verification keys.",
+      "statements": [
+        "Origin linkage could not be evaluated.",
+        "No verifiable history.",
+        "Organization not established."
+      ]
+    },
+    "dimensions": [
+      {
+        "id": "integrity",
+        "label": "Document integrity",
+        "state": "ESTABLISHED",
+        "statement": "Retrieved from identity.foundation and its id equals the DID (SHA-256 ed807e81aac6…).",
+        "proves": "This is the document the origin served at resolution time.",
+        "doesNotProve": "That the document was not different before or will not change; did:web keeps no verifiable history."
+      },
+      {
+        "id": "keys",
+        "label": "Key material",
+        "state": "ESTABLISHED",
+        "statement": "1 verification method validated (P-256).",
+        "proves": "The published keys are well-formed points usable for their declared relationships.",
+        "doesNotProve": "Who holds the corresponding private keys."
+      },
+      {
+        "id": "control",
+        "label": "Update authority",
+        "state": "NOT_ESTABLISHED",
+        "statement": "Whoever controls the web server and DNS for identity.foundation can replace this document.",
+        "proves": "Nothing cryptographic: did:web has no signed update mechanism.",
+        "doesNotProve": "That the current keys were authorised by the previous ones."
+      },
+      {
+        "id": "origin",
+        "label": "Origin binding",
+        "state": "INDETERMINATE",
+        "statement": "Linkage proof format not supported: legacy Linked Data proof type 'JsonWebSignature2020' requires JSON-LD/RDF canonicalization, which DID.is does not implement",
+        "proves": "The DID's key signed a statement linking it to this exact origin (bidirectional binding).",
+        "doesNotProve": "Who operates the origin."
+      },
+      {
+        "id": "transport",
+        "label": "Transport security",
+        "state": "ESTABLISHED",
+        "statement": "TLS certificate for identity.foundation issued by Google Trust Services, valid until 2026-12-27 (77 days).",
+        "proves": "The document came from a server holding a publicly-trusted certificate for the host.",
+        "doesNotProve": "That the server operator is the DID subject."
+      },
+      {
+        "id": "history",
+        "label": "Verifiable history",
+        "state": "NOT_ESTABLISHED",
+        "statement": "did:web keeps no verifiable history; DID.is snapshots are observations, not proofs.",
+        "proves": "",
+        "doesNotProve": "What the document contained before this resolution."
+      },
+      {
+        "id": "organization",
+        "label": "Real-world identity",
+        "state": "NOT_ESTABLISHED",
+        "statement": "Organization not established. DID.is does not verify legal identity or ownership claims.",
+        "proves": "",
+        "doesNotProve": "Who operates this identifier."
+      }
+    ]
+  }
+]

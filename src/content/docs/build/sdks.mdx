@@ -1,0 +1,133 @@
+---
+title: SDKs
+description: Official TypeScript and Python clients for the DID.is public API.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Both SDKs default to `https://did.is/api`, percent-encode identifiers exactly once and raise `DidisError` with the RFC 9457 problem body on non-2xx responses. Requests time out after 30 seconds by default; both clients accept a custom timeout.
+
+| | TypeScript | Python |
+| --- | --- | --- |
+| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.1.0 | [`didis-py`](https://pypi.org/project/didis-py/) 0.1.0 (import `didis`) |
+| Source | [did-is/didis-js](https://github.com/did-is/didis-js) | [did-is/didis-py](https://github.com/did-is/didis-py) |
+| Runtime | Any runtime with `fetch`: Node 18+, Deno, Bun, browsers, edge. Zero dependencies, ESM. | Python 3.11+, `httpx`. Sync `DidisClient` and async `AsyncDidisClient`. |
+| Responses | Typed objects | Plain `dict`s typed with `TypedDict` (`didis.types`) |
+
+## Install
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```bash
+npm install @didis/client
+```
+</TabItem>
+<TabItem label="Python">
+```bash
+pip install didis-py
+```
+</TabItem>
+</Tabs>
+
+## Basic use
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+import { DidisClient, DidisError } from "@didis/client";
+
+const didis = new DidisClient();
+
+try {
+  const r = await didis.resolve("did:web:did.is");
+  console.log(r.verdict.headline);
+  for (const d of r.dimensions) console.log(d.label, d.state);
+} catch (e) {
+  if (e instanceof DidisError) console.log(e.status, e.problem.code, e.problem.detail);
+  else throw e;
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient, DidisError
+
+with DidisClient() as didis:
+    try:
+        r = didis.resolve("did:web:did.is")
+        print(r["verdict"]["headline"])
+        for d in r["dimensions"]:
+            print(d["label"], d["state"])
+    except DidisError as e:
+        print(e.status, e.problem.get("code"), e.problem.get("detail"))
+```
+</TabItem>
+</Tabs>
+
+Async Python:
+
+```python
+import asyncio
+from didis import AsyncDidisClient
+
+async def main() -> None:
+    async with AsyncDidisClient() as didis:
+        r = await didis.resolve("did:web:did.is")
+        print(r["verdict"]["outcome"])
+
+asyncio.run(main())
+```
+
+## Methods
+
+| TypeScript | Python | Endpoint |
+| --- | --- | --- |
+| `health()` | `health()` | `GET /health` |
+| `resolve(did, { noCache })` | `resolve(did, no_cache=…)` | `GET /v1/resolve/{did}` |
+| `resolveW3c(did)` | `resolve_w3c(did)` | `GET /1.0/identifiers/{did}` |
+| `dereference(didUrl)` | `dereference(did_url)` | `GET /v1/dereference/{didUrl}` |
+| `stream(did)` | `stream(did)` | `GET /v1/stream/{did}` |
+| `history(did)` | `history(did)` | `GET /v1/history/{did}` |
+| `diff(did, from?, to?)` | `diff(did, …)` | `GET /v1/diff/{did}` |
+| `graph(did)` | `graph(did)` | `GET /v1/graph/{did}` |
+| `verifyCredential(vc, { expectedAudience })` | `verify_credential(vc, …)` | `POST /v1/credentials/verify` |
+| `evaluatePolicy(did, policy, vc?)` | `evaluate_policy(did, policy, credential=None)` | `POST /v1/policies/evaluate` |
+| `inspectMcp(endpoint)` | `inspect_mcp(endpoint)` | `GET /v1/mcp/inspect` |
+| `inspectA2a(url)` | `inspect_a2a(url)` | `GET /v1/a2a/inspect` |
+| `verifyDelegation(chain, { trustedRoots, register })` | `verify_delegation(chain, trusted_roots=…, register=…)` | `POST /v1/agents/verify-delegation` |
+| `authorize(chain, tool, { trustedRoots })` | `authorize(chain, tool, trusted_roots=…)` | `POST /v1/agents/authorize` |
+| `verifyTool(agent, tool, root?)` | `verify_tool(agent, tool, root=None)` | `GET /v1/agents/verify-tool` |
+| `fastVerifyDid(did)` | `fast_verify_did(did)` | `GET /v1/fast-verify/did/{did}` |
+| `fastVerifyJws(jws, relationship?)` | `fast_verify_jws(jws, relationship=None)` | `POST /v1/fast-verify/jws` |
+| `verifyCustomerMonitorSignature(…)` | `verify_customer_monitor_signature(…)` | [Webhook signatures](/build/webhooks/) |
+
+Directory and claims endpoints have no SDK method yet; call them over HTTP (see the [API reference](/reference/api/#directory-and-claims)).
+
+## Rust and other languages
+
+There is no official Rust SDK yet. The API is plain JSON over HTTPS, so any HTTP client works. In Rust, use `reqwest` with `serde_json`:
+
+```bash
+cargo add reqwest --features json
+cargo add serde_json
+cargo add tokio --features full
+```
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Adid.is")
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    println!("{}", r["verdict"]["headline"]);
+    Ok(())
+}
+```
+
+Percent-encode the identifier once, and on non-2xx responses read the RFC 9457 problem body and the `Retry-After` header yourself (see [Errors](/build/errors/)).
+
+## No CLI
+
+There is no published DID.is command-line tool. Use `curl` or the SDKs.

@@ -1,0 +1,22 @@
+[
+  "/1.0/identifiers/{did}",
+  "/health",
+  "/v1/a2a/inspect",
+  "/v1/agents/authorize",
+  "/v1/agents/verify-delegation",
+  "/v1/agents/verify-tool",
+  "/v1/claims/{did}",
+  "/v1/credentials/verify",
+  "/v1/dereference/{didUrl}",
+  "/v1/diff/{did}",
+  "/v1/directory",
+  "/v1/fast-verify/did/{did}",
+  "/v1/fast-verify/jws",
+  "/v1/graph/{did}",
+  "/v1/history/{did}",
+  "/v1/mcp/inspect",
+  "/v1/policies/evaluate",
+  "/v1/resolve/{did}",
+  "/v1/status",
+  "/v1/stream/{did}"
+]

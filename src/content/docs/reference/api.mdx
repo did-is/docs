@@ -1,0 +1,1140 @@
+---
+title: API reference
+description: All 20 operations of the DID.is public API, with parameters, request bodies, budgets and status codes.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Base URL `https://did.is/api`. No authentication. This page is generated from the [OpenAPI document](https://did.is/api/openapi.json); use that file for code generation.
+
+Budgets: *standard* 20 requests per minute, *intensive* 2 requests per minute, per client. Every error is an RFC 9457 problem; see [Errors and rate limits](/build/errors/).
+
+Every budgeted operation can answer `429 RATE_LIMITED` and `503 CAPACITY_EXHAUSTED`. Both carry a `Retry-After` header with the number of seconds to wait; read it on each response instead of using a fixed delay. Request bodies are limited to 512 KiB (`413 PAYLOAD_TOO_LARGE`).
+
+| Method | Path | Budget |
+| --- | --- | --- |
+| GET | [`/v1/resolve/{did}`](#resolve-with-evidence) | standard |
+| GET | [`/1.0/identifiers/{did}`](#w3c-did-resolution-cr-draft) | standard |
+| GET | [`/v1/stream/{did}`](#live-resolution-sse) | intensive |
+| GET | [`/v1/dereference/{didUrl}`](#dereference-a-did-url) | standard |
+| GET | [`/v1/fast-verify/did/{did}`](#fast-did-verdict) | standard |
+| GET | [`/v1/history/{did}`](#observation-history) | standard |
+| GET | [`/v1/diff/{did}`](#semantic-diff) | standard |
+| GET | [`/v1/graph/{did}`](#evidence-graph) | standard |
+| POST | [`/v1/credentials/verify`](#verify-a-credential) | intensive |
+| POST | [`/v1/policies/evaluate`](#evaluate-a-policy) | intensive |
+| POST | [`/v1/fast-verify/jws`](#verify-a-jws-against-a-did) | standard |
+| GET | [`/v1/mcp/inspect`](#inspect-an-mcp-server) | intensive |
+| GET | [`/v1/a2a/inspect`](#inspect-an-a2a-agent-card) | intensive |
+| POST | [`/v1/agents/verify-delegation`](#verify-a-delegation-chain) | intensive |
+| POST | [`/v1/agents/authorize`](#authorise-a-tool-call) | intensive |
+| GET | [`/v1/agents/verify-tool`](#check-a-registered-agent) | standard |
+| GET | [`/v1/claims/{did}`](#verified-control-claims) | standard |
+| GET | [`/v1/directory`](#search-the-directory) | standard |
+| GET | [`/health`](#health-and-capabilities) | none |
+| GET | [`/v1/status`](#service-status) | standard |
+
+## Resolution
+
+### Resolve with evidence
+
+```http
+GET /v1/resolve/{did}
+```
+
+Superset of the W3C result: verdict (plain-language headline and statements), seven independently evaluated evidence dimensions, the evidence graph, per-stage telemetry, key/linkage/TLS/history evidence and stated limitations. No scores.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier to resolve. |
+| `noCache` | query | Bypass and refresh the resolver cache. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/resolve/did%3Aweb%3Aidentity.foundation"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const r = await didis.resolve("did:web:identity.foundation");
+console.log(r.verdict.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+r = client.resolve("did:web:identity.foundation")
+print(r["verdict"]["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### W3C DID Resolution (CR Draft)
+
+```http
+GET /1.0/identifiers/{did}
+```
+
+DID Resolution v1 · W3C Candidate Recommendation Draft (1 Oct 2026) HTTPS binding. Accept: application/did-resolution returns the full resolution result; application/did (or */*) returns the DID document only. Errors are RFC 9457 problem objects in didResolutionMetadata.error with the specification's status codes (400 invalid DID, 404 not found, 406 representation not supported, 410 deactivated, 501 method not supported). DID URLs (fragments, ?service=, ?versionId=) are dereferenced.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | Raw or fully percent-encoded (did%3A…); decoded exactly once. |
+| `Accept` | header | application/did-resolution \| application/did |
+
+Responses: `200`, `400`, `404`, `406`, `410`, `429`, `501`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/1.0/identifiers/did%3Aweb%3Aidentity.foundation" \
+  -H 'Accept: application/did-resolution'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const result = await didis.resolveW3c("did:web:identity.foundation");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+result = client.resolve_w3c("did:web:identity.foundation")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/1.0/identifiers/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Live resolution (SSE)
+
+```http
+GET /v1/stream/{did}
+```
+
+Server-sent events: one `stage` event per telemetry stage as it completes, then `result` (EnrichedResolution) or `error` (problem), then `done`.
+
+Budget: **intensive**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier to resolve. |
+| `noCache` | query | Resolve fresh. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -sN "https://did.is/api/v1/stream/did%3Aweb%3Aidentity.foundation?noCache=true"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+for await (const ev of didis.stream("did:web:identity.foundation")) {
+  if (ev.event === "stage") console.log(ev.data.stage, ev.data.status);
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+for event, data in client.stream("did:web:identity.foundation"):
+    print(event, data.get("stage"))
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/stream/did%3Aweb%3Aidentity.foundation?noCache=true")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Dereference a DID URL
+
+```http
+GET /v1/dereference/{didUrl}
+```
+
+Selects a verification method or service by fragment, a service endpoint by ?service= (with path-traversal-safe relativeRef), or a did:webvh version by versionId / versionTime / versionNumber. Encode '#' as %23.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `didUrl` (required) | path | e.g. did:web:example.com%23key-1 |
+
+Responses: `200`, `400`, `404`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/dereference/did%3Aweb%3Aidentity.foundation%23key-1"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const d = await didis.dereference("did:web:identity.foundation#key-1");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+d = client.dereference("did:web:identity.foundation#key-1")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/dereference/did%3Aweb%3Aidentity.foundation%23key-1")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Fast DID verdict
+
+```http
+GET /v1/fast-verify/did/{did}
+```
+
+Compact projection for gateways and agents: outcome, headline, dimension states, keys and document hash. Served from cache when fresh.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier. |
+| `noCache` | query | Bypass and refresh the resolver cache. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/fast-verify/did/did%3Aweb%3Aidentity.foundation"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const f = await didis.fastVerifyDid("did:web:identity.foundation");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+f = client.fast_verify_did("did:web:identity.foundation")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/fast-verify/did/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+## History and evidence
+
+### Observation history
+
+```http
+GET /v1/history/{did}
+```
+
+Snapshots DID.is recorded for this identifier (coalesced when unchanged). Observations are records, not proofs of history.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/history/did%3Aweb%3Aidentity.foundation"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const h = await didis.history("did:web:identity.foundation");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+h = client.history("did:web:identity.foundation")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/history/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Semantic diff
+
+```http
+GET /v1/diff/{did}
+```
+
+Compares two observations: keys added, removed and rotated (same id, new material), relationship changes, services, controller, alsoKnownAs, @context and domain-binding changes. Defaults to the latest two distinct observations.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier. |
+| `from` | query | Older document hash. |
+| `to` | query | Newer document hash. |
+
+Responses: `200`, `400`, `404`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/diff/did%3Aweb%3Aidentity.foundation"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const diff = await didis.diff("did:web:identity.foundation");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+diff = client.diff("did:web:identity.foundation")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/diff/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Evidence graph
+
+```http
+GET /v1/graph/{did}
+```
+
+The nodes and edges behind a verdict (subject, document, origin, TLS, keys, services, linkage) with the state of every relation. Use it to render or audit why a verdict was reached.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/graph/did%3Aweb%3Aidentity.foundation"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const g = await didis.graph("did:web:identity.foundation");
+console.log(g.nodes.length, g.edges.length);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+g = client.graph("did:web:identity.foundation")
+print(len(g["nodes"]), len(g["edges"]))
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/graph/did%3Aweb%3Aidentity.foundation")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+## Credentials and policies
+
+### Verify a credential
+
+```http
+POST /v1/credentials/verify
+```
+
+Data Integrity (eddsa-jcs-2022, ecdsa-jcs-2019), VC-JWT 1.1 and vc+jwt. The signing key must belong to the issuer DID and be authorised for assertionMethod. Bitstring Status List entries are fetched, their list credential verified, and evaluated fail-closed. Status precedence: MALFORMED > INVALID > UNSUPPORTED > REVOKED > SUSPENDED > EXPIRED > NOT_YET_VALID > INDETERMINATE > VALID.
+
+Budget: **intensive**.
+
+Request body (JSON):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `credential` (required) | object | Credential object, raw JSON string, or compact JWT. Raw text preserves member identity. |
+| `expectedAudience` | string | Optional expected JWT recipient. Without it, audience is explicitly not verified. |
+
+Responses: `200`, `400`, `413`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST "https://did.is/api/v1/credentials/verify" \
+  -H 'Content-Type: application/json' \
+  -d '{"credential":{"@context":["https://www.w3.org/ns/credentials/v2"],"type":["VerifiableCredential"],"issuer":"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK","validFrom":"2026-01-01T00:00:00Z","credentialSubject":{"id":"did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLdmQR63zLFKfvUwi3"}}}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const credential = {
+  "@context": ["https://www.w3.org/ns/credentials/v2"],
+  type: ["VerifiableCredential"],
+  issuer: "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  validFrom: "2026-01-01T00:00:00Z",
+  credentialSubject: { id: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLdmQR63zLFKfvUwi3" },
+};
+const v = await didis.verifyCredential(credential);
+console.log(v.status, v.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+credential = {
+    "@context": ["https://www.w3.org/ns/credentials/v2"],
+    "type": ["VerifiableCredential"],
+    "issuer": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "validFrom": "2026-01-01T00:00:00Z",
+    "credentialSubject": {"id": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLdmQR63zLFKfvUwi3"},
+}
+v = client.verify_credential(credential)
+print(v["status"], v["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::Client::new()
+    .post("https://did.is/api/v1/credentials/verify")
+    .json(&serde_json::json!({"credential":{"@context":["https://www.w3.org/ns/credentials/v2"],"type":["VerifiableCredential"],"issuer":"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK","validFrom":"2026-01-01T00:00:00Z","credentialSubject":{"id":"did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLdmQR63zLFKfvUwi3"}}}))
+    .send()
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Evaluate a policy
+
+```http
+POST /v1/policies/evaluate
+```
+
+Evaluates declarative rules (allowedMethods, allowedCurves, minKeyBits, requireKeyRelationship, domainBinding, tlsMinDaysRemaining, verifiableHistory, maxCacheAgeSeconds, credentialStatus, credentialIssuerMustBeSubject) against observed evidence. Unevaluable rules are INDETERMINATE, never PASS.
+
+Budget: **intensive**.
+
+Request body (JSON):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `did` (required) | string | Subject DID. |
+| `policy` (required) | object | Rule set. |
+| `credential` | object | Optional credential to evaluate. |
+
+Responses: `200`, `400`, `413`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST "https://did.is/api/v1/policies/evaluate" \
+  -H 'Content-Type: application/json' \
+  -d '{"did":"did:web:identity.foundation","policy":{"rules":{"didResolution":"required","domainBinding":"required"}}}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const { evaluation } = await didis.evaluatePolicy("did:web:identity.foundation", { rules: { domainBinding: "required" } });
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+res = client.evaluate_policy("did:web:identity.foundation", {"rules": {"domainBinding": "required"}})
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::Client::new()
+    .post("https://did.is/api/v1/policies/evaluate")
+    .json(&serde_json::json!({"did":"did:web:identity.foundation","policy":{"rules":{"didResolution":"required","domainBinding":"required"}}}))
+    .send()
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Verify a JWS against a DID
+
+```http
+POST /v1/fast-verify/jws
+```
+
+Resolves the DID in the JWS kid, requires the key in assertionMethod or authentication (or the relationship you name), and verifies the signature.
+
+Budget: **standard**.
+
+Request body (JSON):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `jws` (required) | string | Compact JWS with a DID URL kid. |
+| `relationship` | string | Required verification relationship. |
+
+Responses: `200`, `400`, `413`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST "https://did.is/api/v1/fast-verify/jws" \
+  -H 'Content-Type: application/json' \
+  -d '{"jws":"eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2hhWGdCWkR2b3REa0w1MjU3ZmFpenRpR2lDMlF0S0xHcGJubkVHdGEyZG9LI2tleS0xIn0.eyJzdWIiOiJkaWQ6a2V5Ono2TWtoYVhnQlpEdm90RGtMNTI1N2ZhaXp0aUdpQzJRdEtMR3Bibm5FR3RhMmRvSyJ9.c2lnbmF0dXJl"}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+// Compact JWS with a DID URL kid header
+const token = "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2hhWGdCWkR2b3REa0w1MjU3ZmFpenRpR2lDMlF0S0xHcGJubkVHdGEyZG9LI2tleS0xIn0.eyJzdWIiOiJkaWQ6a2V5Ono2TWtoYVhnQlpEdm90RGtMNTI1N2ZhaXp0aUdpQzJRdEtMR3Bibm5FR3RhMmRvSyJ9.c2lnbmF0dXJl";
+const j = await didis.fastVerifyJws(token);
+console.log(j.status, j.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+# Compact JWS with a DID URL kid header
+token = "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2hhWGdCWkR2b3REa0w1MjU3ZmFpenRpR2lDMlF0S0xHcGJubkVHdGEyZG9LI2tleS0xIn0.eyJzdWIiOiJkaWQ6a2V5Ono2TWtoYVhnQlpEdm90RGtMNTI1N2ZhaXp0aUdpQzJRdEtMR3Bibm5FR3RhMmRvSyJ9.c2lnbmF0dXJl"
+j = client.fast_verify_jws(token)
+print(j["status"], j["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::Client::new()
+    .post("https://did.is/api/v1/fast-verify/jws")
+    .json(&serde_json::json!({"jws":"eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2hhWGdCWkR2b3REa0w1MjU3ZmFpenRpR2lDMlF0S0xHcGJubkVHdGEyZG9LI2tleS0xIn0.eyJzdWIiOiJkaWQ6a2V5Ono2TWtoYVhnQlpEdm90RGtMNTI1N2ZhaXp0aUdpQzJRdEtMR3Bibm5FR3RhMmRvSyJ9.c2lnbmF0dXJl"}))
+    .send()
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+## Agents
+
+### Inspect an MCP server
+
+```http
+GET /v1/mcp/inspect
+```
+
+Streamable HTTP: server/discover (2026-07-28) with legacy initialize fallback; paginated tools/list; SHA-256 fingerprints of every tool definition (RFC 8785); declared annotations vs heuristic side-effect classes; risk signals; drift against the previous observation. 401 responses are reported, never bypassed.
+
+Budget: **intensive**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `endpoint` (required) | query | The MCP endpoint. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/mcp/inspect?endpoint=https%3A%2F%2Fmcp.example.com%2Fmcp"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const m = await didis.inspectMcp("https://mcp.example.com/mcp");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+m = client.inspect_mcp("https://mcp.example.com/mcp")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/mcp/inspect?endpoint=https%3A%2F%2Fmcp.example.com%2Fmcp")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Inspect an A2A agent card
+
+```http
+GET /v1/a2a/inspect
+```
+
+Fetches /.well-known/agent-card.json (legacy agent.json fallback), validates the A2A 1.0 shape, and verifies signatures[] (JWS over the JCS card) with keys from a DID kid or an HTTPS jku.
+
+Budget: **intensive**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `url` (required) | query | Agent origin or card URL. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/a2a/inspect?url=https%3A%2F%2Fagent.example"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const a = await didis.inspectA2a("https://agent.example");
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+a = client.inspect_a2a("https://agent.example")
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/a2a/inspect?url=https%3A%2F%2Fagent.example")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Verify a delegation chain
+
+```http
+POST /v1/agents/verify-delegation
+```
+
+DID.is Delegation Receipt v1 (experimental): compact JWS receipts, root first. Verifies signatures via capabilityDelegation keys, issuer/audience and prf hash linkage, temporal containment, capability attenuation, acyclicity and depth ≤ 8. register: true stores VALID chains for /v1/agents/verify-tool.
+
+Budget: **intensive**.
+
+Request body (JSON):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `chain` (required) | array of string | Receipts, root first. |
+| `trustedRoots` | array of string | Acceptable root DIDs. |
+| `register` | boolean | Store if VALID. |
+
+Responses: `200`, `400`, `413`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST "https://did.is/api/v1/agents/verify-delegation" \
+  -H 'Content-Type: application/json' \
+  -d '{"chain":[],"trustedRoots":["did:web:bank.example"]}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+// Receipts in compact JWS format, root first
+const chain: string[] = [];
+const { result } = await didis.verifyDelegation(chain, {
+  trustedRoots: ["did:web:bank.example"],
+});
+console.log(result.status, result.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+# Receipts in compact JWS format, root first
+chain: list[str] = []
+res = client.verify_delegation(chain, trusted_roots=["did:web:bank.example"])
+print(res["result"]["status"], res["result"]["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::Client::new()
+    .post("https://did.is/api/v1/agents/verify-delegation")
+    .json(&serde_json::json!({"chain":[],"trustedRoots":["did:web:bank.example"]}))
+    .send()
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Authorise a tool call
+
+```http
+POST /v1/agents/authorize
+```
+
+Stateless: verifies the chain and checks that its leaf capabilities grant the tool (exact, *, ns:tool, ns:*).
+
+Budget: **intensive**.
+
+Request body (JSON):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `chain` (required) | array of string | Receipts, root first. |
+| `tool` (required) | string | Tool name. |
+
+Responses: `200`, `400`, `413`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST "https://did.is/api/v1/agents/authorize" \
+  -H 'Content-Type: application/json' \
+  -d '{"chain":[],"tool":"transfer"}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+// Receipts in compact JWS format, root first
+const chain: string[] = [];
+const { authorization } = await didis.authorize(chain, "transfer");
+console.log(authorization.decision, authorization.reason);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+# Receipts in compact JWS format, root first
+chain: list[str] = []
+res = client.authorize(chain, "transfer")
+print(res["authorization"]["decision"], res["authorization"]["reason"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::Client::new()
+    .post("https://did.is/api/v1/agents/authorize")
+    .json(&serde_json::json!({"chain":[],"tool":"transfer"}))
+    .send()
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Check a registered agent
+
+```http
+GET /v1/agents/verify-tool
+```
+
+Answers ALLOW or DENY for an agent and tool against delegation chains previously registered with verify-delegation (register: true). Without a registered VALID chain the answer is DENY.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `agent` (required) | query | The acting agent. |
+| `tool` (required) | query | Tool name. |
+| `root` | query | Require this delegation root. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=transfer"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const t = await didis.verifyTool("did:web:agent.example", "transfer");
+if (!t.authorized) throw new Error(t.reason);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+t = client.verify_tool("did:web:agent.example", "transfer")
+assert t["authorized"], t["reason"]
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=transfer")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+## Directory and claims
+
+### Verified control claims
+
+```http
+GET /v1/claims/{did}
+```
+
+Current, unexpired proofs that a controller demonstrated control of this DID (for example a key signature), each stating what it proves and what it does not. A claim is not legal identity.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `did` (required) | path | The identifier. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/claims/did%3Aweb%3Adid.is"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const res = await fetch("https://did.is/api/v1/claims/did%3Aweb%3Adid.is");
+if (!res.ok) throw new Error((await res.json()).detail);
+const data = await res.json();
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import httpx
+
+res = httpx.get("https://did.is/api/v1/claims/did%3Aweb%3Adid.is")
+res.raise_for_status()
+data = res.json()
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/claims/did%3Aweb%3Adid.is")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Search the directory
+
+```http
+GET /v1/directory
+```
+
+Identifiers whose controller proved control and opted in to be listed. Listings cannot be bought. Unknown or repeated parameters are rejected.
+
+Budget: **standard**.
+
+| Parameter | In | Description |
+| --- | --- | --- |
+| `q` | query | Free text, up to 100 characters. |
+| `method` | query | DID method filter, e.g. web, key, webvh. |
+| `limit` | query | 1–50 (default 20). |
+| `cursor` | query | nextCursor from the previous page. |
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/directory?method=web&limit=5"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const res = await fetch("https://did.is/api/v1/directory?method=web&limit=5");
+if (!res.ok) throw new Error((await res.json()).detail);
+const data = await res.json();
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import httpx
+
+res = httpx.get("https://did.is/api/v1/directory?method=web&limit=5")
+res.raise_for_status()
+data = res.json()
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/directory?method=web&limit=5")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+## Service
+
+### Health and capabilities
+
+```http
+GET /health
+```
+
+Liveness plus the supported DID methods and implemented standard versions. Not rate limited.
+
+Budget: **none**.
+
+Responses: `200`, `400`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/health"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const h = await didis.health();
+console.log(h.supportedMethods);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+client = DidisClient()  # https://did.is/api
+h = client.health()
+print(h["supportedMethods"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/health")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>
+
+### Service status
+
+```http
+GET /v1/status
+```
+
+Machine-readable component status behind did.is/status: resolution, console, billing, monitoring and more.
+
+Budget: **standard**.
+
+Responses: `200`, `400`, `429`, `503`.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s "https://did.is/api/v1/status"
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const res = await fetch("https://did.is/api/v1/status");
+if (!res.ok) throw new Error((await res.json()).detail);
+const data = await res.json();
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import httpx
+
+res = httpx.get("https://did.is/api/v1/status")
+res.raise_for_status()
+data = res.json()
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+// Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/status")
+    .await?
+    .error_for_status()?
+    .json()
+    .await?;
+```
+</TabItem>
+</Tabs>

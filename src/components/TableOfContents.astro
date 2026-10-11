@@ -1,0 +1,128 @@
+---
+import DefaultTableOfContents from '@astrojs/starlight/components/TableOfContents.astro';
+---
+
+<div class="didis-toc-container">
+  <DefaultTableOfContents {...Astro.props} />
+
+  <div class="didis-toc-utilities">
+    <div class="didis-toc-divider"></div>
+    <div class="didis-toc-actions">
+      <button id="didis-copy-page-link" class="didis-action-btn" type="button" aria-label="Copy page link">
+        <svg class="action-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span class="btn-label">Copy link</span>
+      </button>
+
+      <a href="https://did.is" target="_blank" rel="noopener noreferrer" class="didis-action-btn" aria-label="Open did.is">
+        <svg class="action-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span class="btn-label">Playground</span>
+      </a>
+
+      <a href="https://github.com/did-is/docs/issues/new" target="_blank" rel="noopener noreferrer" class="didis-action-btn" aria-label="Send feedback on GitHub">
+        <svg class="action-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="btn-label">Feedback</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setupTocActions() {
+    const copyBtn = document.getElementById('didis-copy-page-link');
+    if (!copyBtn) return;
+    
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        const label = copyBtn.querySelector('.btn-label');
+        if (label) {
+          const original = label.textContent;
+          label.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            label.textContent = original;
+            copyBtn.classList.remove('copied');
+          }, 1800);
+        }
+      } catch (e) {
+        /* clipboard unavailable */
+      }
+    });
+  }
+
+  // Setup on page load and on Astro view transitions
+  setupTocActions();
+  document.addEventListener('astro:page-load', setupTocActions);
+</script>
+
+<style>
+  .didis-toc-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .didis-toc-divider {
+    height: 1px;
+    background: var(--sl-color-hairline, rgba(255, 255, 255, 0.08));
+    margin: 1.25rem 0 0.75rem 0;
+  }
+
+  .didis-toc-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .didis-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.775rem;
+    color: var(--sl-color-gray-3, #94a3b8);
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    font-family: var(--sl-font-mono, monospace);
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  .didis-action-btn:hover {
+    color: var(--sl-color-text, #f1f5f9);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--sl-color-hairline, rgba(255, 255, 255, 0.08));
+  }
+
+  :root[data-theme='light'] .didis-action-btn:hover {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+
+  .didis-action-btn.copied {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .action-icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+  }
+
+  .didis-action-btn:hover .action-icon {
+    opacity: 1;
+  }
+</style>

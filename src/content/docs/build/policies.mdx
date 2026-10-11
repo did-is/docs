@@ -1,0 +1,128 @@
+---
+title: Policies
+description: Evaluate a DID, and optionally a credential, against your own acceptance rules with POST /v1/policies/evaluate.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A policy is a set of rules you choose, for example "the DID must use `did:web` or `did:webvh`, sign with Ed25519 and have a verified domain binding". `POST /v1/policies/evaluate` resolves the DID, evaluates each rule and returns PASS or FAIL per rule. It uses the intensive budget (2 requests per minute).
+
+## Request
+
+```json
+{
+  "did": "did:web:did.is",
+  "policy": {
+    "name": "optional label",
+    "rules": { "didResolution": "required", "domainBinding": "required" }
+  },
+  "credential": "optional: a credential to check together with the DID"
+}
+```
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -X POST https://did.is/api/v1/policies/evaluate \
+  -H 'content-type: application/json' \
+  -d '{"did":"did:web:did.is","policy":{"rules":{"didResolution":"required","domainBinding":"required"}}}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const res = await didis.evaluatePolicy("did:web:did.is", {
+  rules: { didResolution: "required", domainBinding: "required" },
+});
+console.log(res.evaluation.status, res.evaluation.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+res = didis.evaluate_policy(
+    "did:web:did.is",
+    {"rules": {"didResolution": "required", "domainBinding": "required"}},
+)
+print(res["evaluation"]["status"], res["evaluation"]["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let r: serde_json::Value = reqwest::Client::new()
+        .post("https://did.is/api/v1/policies/evaluate")
+        .json(&serde_json::json!({
+            "did": "did:web:did.is",
+            "policy": { "rules": { "didResolution": "required", "domainBinding": "required" } }
+        }))
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    println!("{} {}", r["evaluation"]["status"], r["evaluation"]["headline"]);
+    Ok(())
+}
+```
+</TabItem>
+</Tabs>
+
+## Response
+
+```json
+{
+  "evaluation": {
+    "did": "did:web:did.is",
+    "evaluatedAt": "2026-10-11T00:28:39Z",
+    "status": "PASS",
+    "headline": "All 2 evaluated rules pass.",
+    "rulesEvaluated": 2,
+    "rulesPassed": 2,
+    "evaluations": [
+      {
+        "rule": "didResolution",
+        "status": "PASS",
+        "expected": "required",
+        "observedValue": "RESOLVED",
+        "message": "resolved via did:web (RESOLVED)"
+      },
+      {
+        "rule": "domainBinding",
+        "status": "PASS",
+        "expected": "VERIFIED",
+        "observedValue": "VERIFIED",
+        "message": "VERIFIED: JWS EdDSA signature verified with Ed25519 key did:web:did.is#key-1"
+      }
+    ]
+  },
+  "resolution": { "…": "the full resolution" },
+  "credential": null
+}
+```
+
+Each rule is `PASS`, `FAIL`, `INDETERMINATE` or `NOT_APPLICABLE`. The overall status ignores `NOT_APPLICABLE` rules and is:
+
+- `FAIL` if any rule fails,
+- otherwise `INDETERMINATE` if any rule could not be evaluated (or no rule applies),
+- otherwise `PASS`.
+
+## Rules
+
+All rules are optional. Only the rules you set are evaluated.
+
+| Rule | Value | Passes when |
+| --- | --- | --- |
+| `didResolution` | `"required"` | The DID resolves and is not deactivated. |
+| `allowedMethods` | e.g. `["web", "webvh"]` | The DID method is in the list. |
+| `allowedCurves` | e.g. `["Ed25519", "P-256"]` | Valid signing keys use one of these curves. |
+| `allowedKeySuites` | e.g. `["Multikey", "JsonWebKey2020"]` | Verification method types are in the list. |
+| `minKeyBits` | number | Keys have at least this strength. |
+| `requireKeyRelationship` | e.g. `"assertionMethod"` | A valid key is authorised for this relationship. |
+| `domainBinding` | `"required"` or `"optional"` | The DIF Well-Known DID Configuration verifies. |
+| `tlsMinDaysRemaining` | number | The origin's certificate is valid for at least this many days. |
+| `verifiableHistory` | `"required"` | The DID has a cryptographically verifiable history (`did:webvh`). |
+| `maxCacheAgeSeconds` | number | The result is no older than this. |
+| `credentialStatus` | `"active"` | The supplied credential verifies and its status is clear. |
+| `credentialIssuerMustBeSubject` | `true` | The supplied credential's issuer is the evaluated DID. |
+
+A policy evaluates technical evidence. It does not decide whether you should trust the organisation behind a DID.

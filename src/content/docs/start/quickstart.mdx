@@ -1,0 +1,120 @@
+---
+title: Quickstart
+description: Resolve your first identifier, read the verdict and handle errors, with curl, TypeScript or Python.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The public API needs no account and no API key. Base URL: `https://did.is/api`.
+
+<Steps>
+
+1. **Resolve an identifier**
+
+   <Tabs syncKey="lang">
+   <TabItem label="curl">
+   ```bash
+   curl https://did.is/api/v1/resolve/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+   ```
+   </TabItem>
+   <TabItem label="TypeScript">
+   ```bash
+   npm install @didis/client
+   ```
+   ```ts
+   import { DidisClient } from "@didis/client";
+
+   const didis = new DidisClient(); // https://did.is/api
+   const r = await didis.resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK");
+   console.log(r.verdict.outcome, "-", r.verdict.headline);
+   ```
+   </TabItem>
+   <TabItem label="Python">
+   ```bash
+   pip install didis-py
+   ```
+   ```python
+   from didis import DidisClient
+
+   with DidisClient() as didis:
+       r = didis.resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
+       print(r["verdict"]["outcome"], "-", r["verdict"]["headline"])
+   ```
+   </TabItem>
+   <TabItem label="Rust">
+   ```bash
+   cargo add reqwest --features json
+   cargo add serde_json
+   cargo add tokio --features full
+   ```
+   ```rust
+   #[tokio::main]
+   async fn main() -> Result<(), Box<dyn std::error::Error>> {
+       let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Akey%3Az6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
+           .await?
+           .error_for_status()?
+           .json()
+           .await?;
+       println!("{} - {}", r["verdict"]["outcome"], r["verdict"]["headline"]);
+       Ok(())
+   }
+   ```
+   </TabItem>
+   </Tabs>
+
+2. **Read the verdict**
+
+   The response starts with a verdict:
+
+   ```json
+   "verdict": {
+     "outcome": "RESOLVED",
+     "headline": "Cryptographically controlled via Ed25519.",
+     "statements": ["Self-certifying: not bound to any origin.", "Organization not established."]
+   }
+   ```
+
+   `outcome` is `RESOLVED`, `RESOLVED_WITH_WARNINGS` or `DEACTIVATED`.
+
+3. **Read the evidence dimensions**
+
+   `dimensions` is an array of seven entries in a fixed order. Each one has `id`, `label`, `state`, `statement`, `proves` and `doesNotProve`:
+
+   ```json
+   {
+     "id": "integrity",
+     "label": "Document integrity",
+     "state": "SELF_CERTIFYING",
+     "statement": "The document is derived deterministically from the identifier itself.",
+     "proves": "The document is exactly what the identifier encodes.",
+     "doesNotProve": "Who holds the private key."
+   }
+   ```
+
+   Next, try a `did:web` identifier such as `did:web:did.is`, where origin binding and TLS are checked. See [Core concepts](/start/concepts/) for every state.
+
+4. **Handle errors**
+
+   Errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem objects with a stable `code`:
+
+   ```bash
+   curl -i https://did.is/api/v1/resolve/did:example:123
+   ```
+   ```http
+   HTTP/2 501
+   content-type: application/problem+json
+
+   {"type":"https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED","title":"DID method not supported",
+    "status":501,"code":"METHOD_NOT_SUPPORTED",
+    "detail":"did:example is not supported (supported: did:key, did:jwk, did:web, did:webvh)", "trace":[…]}
+   ```
+
+   The SDKs raise `DidisError` with `status` and `problem`. On `429`, wait for the number of seconds in the `Retry-After` header. See [Errors and rate limits](/build/errors/).
+
+</Steps>
+
+## Next
+
+- [Resolution and dereferencing](/build/resolution/): W3C output, DID URLs, history and diffs.
+- [Credentials](/build/credentials/): verify a verifiable credential.
+- [Agent trust APIs](/build/agents/): MCP, A2A and delegation receipts.

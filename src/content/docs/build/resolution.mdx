@@ -1,0 +1,139 @@
+---
+title: Resolution and dereferencing
+description: Resolve DIDs with evidence or in W3C format, dereference DID URLs, and read history, diffs and graphs.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Choose an endpoint
+
+| Endpoint | Returns | Use it when |
+| --- | --- | --- |
+| `GET /v1/resolve/{did}` | Document, metadata, verdict, seven dimensions, evidence, graph, trace | You want to know what the result proves. |
+| `GET /1.0/identifiers/{did}` | W3C DID Resolution HTTPS binding | You need a standard resolver interface. |
+| `GET /v1/fast-verify/did/{did}` | Compact verdict: outcome, headline, dimension states, keys, document hash | Gateways and agents that need a quick answer. |
+| `GET /v1/dereference/{didUrl}` | One resource selected by a DID URL | You need a single key or service. |
+
+## Resolve with evidence
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl https://did.is/api/v1/resolve/did:web:did.is
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const r = await didis.resolve("did:web:did.is");
+console.log(r.verdict.outcome, r.verdict.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+r = didis.resolve("did:web:did.is")
+print(r["verdict"]["outcome"], r["verdict"]["headline"])
+```
+</TabItem>
+<TabItem label="Rust">
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Adid.is")
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    println!("{} {}", r["verdict"]["outcome"], r["verdict"]["headline"]);
+    Ok(())
+}
+```
+</TabItem>
+</Tabs>
+
+Top-level fields: `did`, `method`, `didDocument`, `didResolutionMetadata`, `didDocumentMetadata`, `verdict`, `dimensions`, `evidence`, `graph`, `trace`, `limitations`, `resolver`, `observedAt`, `cached`.
+
+Results are cached. Add `?noCache=true` to resolve fresh. See [Core concepts](/start/concepts/) for the verdict and dimensions.
+
+## W3C DID Resolution
+
+`/1.0/identifiers/{did}` implements the DID Resolution v1 HTTPS binding. The `Accept` header selects the representation:
+
+- `application/did-resolution`: the full resolution result (`didDocument`, `didResolutionMetadata`, `didDocumentMetadata`).
+- `application/did` (or `*/*`): the DID document only.
+
+```bash
+curl -H 'Accept: application/did-resolution' \
+  https://did.is/api/1.0/identifiers/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+```
+
+This endpoint uses the specification's status codes: 400 invalid DID, 404 not found, 406 representation not supported, 410 deactivated, 501 method not supported. Other errors are 500. DID URLs are dereferenced here as well.
+
+## Dereference a DID URL
+
+Encode `#` as `%23`.
+
+```bash
+curl https://did.is/api/v1/dereference/did:web:did.is%23key-1
+```
+
+```json
+{
+  "@context": "https://w3id.org/did-resolution/v1",
+  "dereferencingMetadata": { "contentType": "application/json", "retrieved": "2026-10-11T00:38:33Z" },
+  "contentStream": {
+    "controller": "did:web:did.is",
+    "id": "did:web:did.is#key-1",
+    "publicKeyJwk": { "crv": "Ed25519", "kty": "OKP", "x": "7cJsq2cBTFJjHGswkemeCO-uB5vbKwFIdGWStM7ELiY" },
+    "type": "JsonWebKey2020"
+  },
+  "contentMetadata": {}
+}
+```
+
+Supported selectors:
+
+- **Fragment** (`%23key-1`): a verification method or service.
+- **`?service=<id>`**: a service endpoint, with an optional `relativeRef`. Path traversal is refused.
+- **`?versionId=`, `?versionTime=`, `?versionNumber=`**: a specific `did:webvh` version.
+
+DID URL paths (`did:web:example.com/path`) are not supported and return `FEATURE_NOT_SUPPORTED`.
+
+## History, diff and graph
+
+| Endpoint | What it returns |
+| --- | --- |
+| `GET /v1/history/{did}` | Snapshots DID.is recorded for this identifier, coalesced when unchanged. Observations are records, not proofs of history. |
+| `GET /v1/diff/{did}?from=&to=` | A semantic diff between two recorded snapshots (document hashes). Without `from`/`to`, the latest two. |
+| `GET /v1/graph/{did}` | The evidence graph: nodes and edges, each edge with a state. |
+
+The diff lists added, removed and rotated keys, changed relationships and services, controller and `alsoKnownAs` changes, and the domain binding before and after:
+
+```json
+{
+  "did": "did:web:did.is",
+  "identical": true,
+  "keysAdded": [],
+  "keysRemoved": [],
+  "keysRotated": [],
+  "relationshipsChanged": [],
+  "servicesAdded": [],
+  "servicesRemoved": [],
+  "servicesChanged": [],
+  "controllerChanged": false,
+  "domainBindingFrom": "VERIFIED",
+  "domainBindingTo": "VERIFIED",
+  "domainBindingChanged": false,
+  "summary": ["documents are identical"]
+}
+```
+
+(Abridged: the response also includes the hashes, observation times and both documents.)
+
+## Control claims and directory
+
+- `GET /v1/claims/{did}`: current proofs that a controller demonstrated control of the DID. A claim is not legal identity.
+- `GET /v1/directory?q=&method=&limit=&cursor=`: DIDs whose controllers proved control and chose to be listed. `limit` is 1 to 50 (default 20); `q` is at most 100 characters.
+
+```bash
+curl 'https://did.is/api/v1/directory?method=web&limit=5'
+```

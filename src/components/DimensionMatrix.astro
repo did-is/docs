@@ -1,0 +1,101 @@
+---
+/**
+ * Evidence dimensions across live example resolutions.
+ * Data: src/data/resolve-examples.json, captured from GET /v1/resolve/{did} (live API).
+ */
+import examples from '../data/resolve-examples.json';
+
+interface Props {
+  /** Show the per-dimension "proves / does not prove" details. */
+  details?: boolean;
+}
+const { details = true } = Astro.props;
+
+const dims = examples[0].dimensions.map((d) => ({ id: d.id, label: d.label }));
+const short = (did: string) => (did.startsWith('did:key:') ? 'did:key:z6Mkha…2doK' : did);
+const stateClass = (s: string) => `state state-${s.toLowerCase().replace(/_/g, '-')}`;
+const captured = examples
+  .map((e) => e.observedAt)
+  .filter(Boolean)
+  .sort()[0]
+  ?.slice(0, 10);
+---
+
+<div class="table-scroll dim-matrix" role="region" aria-label="Evidence dimensions by example identifier" tabindex="0">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Dimension</th>
+        {examples.map((e) => <th scope="col"><code>{short(e.did)}</code></th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {
+        dims.map((d) => (
+          <tr>
+            <th scope="row">
+              <code>{d.id}</code>
+              <span class="dim-label">{d.label}</span>
+            </th>
+            {examples.map((e) => {
+              const x = e.dimensions.find((y) => y.id === d.id)!;
+              return (
+                <td>
+                  <span class={stateClass(x.state)}>{x.state}</span>
+                  <span class="dim-statement">{x.statement}</span>
+                </td>
+              );
+            })}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+<p class="caption">
+  Captured from <code>GET /v1/resolve/&#123;did&#125;</code>{captured && <> on {captured}</>}. Live results change when the
+  identifier's document, certificate or configuration changes.
+</p>
+
+{
+  details && (
+    <div class="dim-details">
+      {dims.map((d) => {
+        const all = examples.flatMap((e) => e.dimensions.filter((y) => y.id === d.id));
+        const withText = all.filter((y) => y.proves || y.doesNotProve);
+        return (
+          <section class="dim-card" aria-labelledby={`dim-${d.id}`}>
+            <h3 id={`dim-${d.id}`}>
+              <code>{d.id}</code> · {d.label}
+            </h3>
+            {withText.length === 0 ? (
+              <p class="muted">No statement of proof is attached in these examples.</p>
+            ) : (
+              <dl>
+                {[...new Map(withText.map((y) => [y.state + y.proves + y.doesNotProve, y])).values()].map((y) => (
+                  <>
+                    <dt>
+                      <span class={stateClass(y.state)}>{y.state}</span>
+                    </dt>
+                    <dd>
+                      {y.proves && (
+                        <p>
+                          <strong>Proves:</strong> {y.proves}
+                        </p>
+                      )}
+                      {y.doesNotProve && (
+                        <p>
+                          <strong>Does not prove:</strong> {y.doesNotProve}
+                        </p>
+                      )}
+                    </dd>
+                  </>
+                ))}
+              </dl>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  )
+}

@@ -1,0 +1,66 @@
+---
+title: Live stream (SSE)
+description: Follow each resolution stage as it completes with server-sent events from /v1/stream.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`GET /v1/stream/{did}` resolves an identifier and sends each stage as a server-sent event while it runs. It uses the intensive budget (2 requests per minute).
+
+## Event order
+
+1. One `stage` event per completed stage.
+2. Then either `result` (the full resolution, same shape as `/v1/resolve`) or `error` (an RFC 9457 problem).
+3. Then `done`.
+
+```bash
+curl -N https://did.is/api/v1/stream/did:web:did.is
+```
+
+```text
+event: stage
+data: {"stage":"syntax.parse","label":"DID syntax (DID Core §3.1)","status":"PASS","startedUs":0,"durationUs":3,"detail":"method 'web' · 14 characters"}
+
+event: stage
+data: {"stage":"method.web.transform","label":"DID-to-HTTPS transformation","status":"PASS","startedUs":40,"durationUs":10,"detail":"did:web:did.is → https://did.is/.well-known/did.json"}
+
+event: stage
+data: {"stage":"egress.dns","label":"DNS resolution and address pinning","status":"PASS","startedUs":62,"durationUs":923,"detail":"did.is pinned to 104.21.76.195 (all answers public)"}
+
+…
+
+event: result
+data: { …full resolution… }
+
+event: done
+data: {}
+```
+
+Each stage has `stage`, `label`, `status`, `startedUs`, `durationUs` and `detail`. The same stages appear in the `trace` array of `/v1/resolve`.
+
+## With the SDKs
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+for await (const ev of didis.stream("did:web:did.is")) {
+  if (ev.event === "stage") console.log(ev.data.status, ev.data.label);
+  if (ev.event === "result") console.log(ev.data.verdict.headline);
+  if (ev.event === "error") console.error(ev.data.code, ev.data.detail);
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+for event, data in didis.stream("did:web:did.is"):
+    if event == "stage":
+        print(data["status"], data["label"])
+    elif event == "result":
+        print(data["verdict"]["headline"])
+    elif event == "error":
+        print(data.get("code"), data.get("detail"))
+```
+</TabItem>
+</Tabs>
+
+The SDKs resolve fresh (`noCache`) by default when streaming and stop after `done`.

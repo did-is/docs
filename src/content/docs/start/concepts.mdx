@@ -1,0 +1,71 @@
+---
+title: Core concepts
+description: Verdicts, the seven evidence dimensions and their states, and how each DID method is evaluated.
+---
+
+import DimensionMatrix from '../../../components/DimensionMatrix.astro';
+
+Every resolution from `GET /v1/resolve/{did}` (and the result page on did.is) has two layers: a short **verdict** and seven **evidence dimensions**. The same dimensions appear in the stream result, in history snapshots and in the compact `fast-verify` response.
+
+## Verdict
+
+| Field | Meaning |
+| --- | --- |
+| `outcome` | `RESOLVED`, `RESOLVED_WITH_WARNINGS` (a dimension `FAILED`, a key is invalid, or the document has warnings) or `DEACTIVATED`. |
+| `headline` | One sentence about control, e.g. "Cryptographically controlled via Ed25519." |
+| `statements` | Short facts about origin, history and identity. |
+
+The verdict is a summary of the dimensions, not a score.
+
+## The seven dimensions
+
+Always returned in this order:
+
+| `id` | Label | Question it answers |
+| --- | --- | --- |
+| `integrity` | Document integrity | Is this the document the identifier or its origin actually commits to? |
+| `keys` | Key material | Are the published keys well-formed and usable for their relationships? |
+| `control` | Update authority | Who can change this identifier, and is that cryptographically enforced? |
+| `origin` | Origin binding | Does the web origin link back to this DID ([DIF Well-Known DID Configuration](https://identity.foundation/.well-known/resources/did-configuration/))? |
+| `transport` | Transport security | Was the document fetched over TLS with a publicly trusted certificate? |
+| `history` | Verifiable history | Is there a signed, hash-chained record of past versions? |
+| `organization` | Real-world identity | Who operates the identifier? DID.is does not verify this. |
+
+## States
+
+| State | Meaning |
+| --- | --- |
+| `ESTABLISHED` | The check ran and succeeded. |
+| `SELF_CERTIFYING` | True by construction: the identifier itself encodes it (`did:key`, `did:jwk`). |
+| `NOT_ESTABLISHED` | Nothing establishes it. Not a failure; the evidence does not exist. |
+| `FAILED` | The check ran and the evidence is wrong, e.g. document `id` mismatch or invalid linkage proof. |
+| `INDETERMINATE` | The check could not be completed, e.g. unsupported proof format or unreachable configuration. |
+| `NOT_APPLICABLE` | The dimension does not apply to this method or result. |
+
+## Live examples
+
+Three identifiers resolved against the live API:
+
+<DimensionMatrix />
+
+## Per-method behaviour
+
+| Dimension | `did:key`, `did:jwk` | `did:web` | `did:webvh` |
+| --- | --- | --- | --- |
+| `integrity` | `SELF_CERTIFYING` | `ESTABLISHED` if the document `id` equals the DID, else `FAILED` | `ESTABLISHED`: state anchored in the verified log |
+| `keys` | From the encoded key | `ESTABLISHED` / `FAILED` / `INDETERMINATE` / `NOT_ESTABLISHED` depending on validated keys | Same as `did:web` |
+| `control` | `SELF_CERTIFYING`; cannot rotate or deactivate | `NOT_ESTABLISHED`: whoever controls the server and DNS can replace the document | `ESTABLISHED`: every version signed by an authorised update key |
+| `origin` | `NOT_APPLICABLE` | From the DID Configuration: verified, not configured, not linked, invalid, malformed, unsupported proof or unreachable | Same as `did:web` |
+| `transport` | `NOT_APPLICABLE` | `ESTABLISHED` with certificate issuer and expiry | Same as `did:web` |
+| `history` | `NOT_APPLICABLE` | `NOT_ESTABLISHED`: DID.is snapshots are observations, not proofs | `ESTABLISHED`: hash chain, SCID, signatures and witnesses verified |
+| `organization` | `NOT_ESTABLISHED` | `NOT_ESTABLISHED` | `NOT_ESTABLISHED` |
+
+A deactivated `did:webvh` returns outcome `DEACTIVATED`, and `integrity` and `keys` become `NOT_APPLICABLE`.
+
+## Credential checks are separate
+
+Verifying a credential produces its own `checks[]` (structure, issuer, proof, validity, status, audience) and an overall status such as `VALID` or `REVOKED`. These are described on [Credentials](/build/credentials/), not as identifier dimensions.
+
+## Limitations in every result
+
+Each resolution includes `limitations[]`, for example: "DID.is reports evidence; it does not assign trust scores or verify legal identity." Show these to users when you display a result.

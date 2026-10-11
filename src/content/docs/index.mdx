@@ -1,0 +1,114 @@
+---
+title: Documentation
+description: Resolve decentralized identifiers, read the evidence behind each result, verify credentials and check AI agents with DID.is.
+template: splash
+hero:
+  image:
+    html: '<figure class="hero-card" aria-label="Example result for did:web:did.is: seven evidence dimensions"><div class="hc-head"><span class="hc-label">GET /v1/resolve/{did}</span><code class="hc-did">did:web:did.is</code></div><p class="hc-verdict"><span class="hc-badge">RESOLVED</span>Publishes Ed25519 verification keys.</p><ul class="hc-dims"><li><span class="hc-dot hc-ok"></span><code>integrity</code><span class="hc-state hc-ok">established</span></li><li><span class="hc-dot hc-ok"></span><code>keys</code><span class="hc-state hc-ok">established</span></li><li><span class="hc-dot hc-neutral"></span><code>control</code><span class="hc-state hc-neutral">not established</span></li><li><span class="hc-dot hc-ok"></span><code>origin</code><span class="hc-state hc-ok">established</span></li><li><span class="hc-dot hc-ok"></span><code>transport</code><span class="hc-state hc-ok">established</span></li><li><span class="hc-dot hc-neutral"></span><code>history</code><span class="hc-state hc-neutral">not established</span></li><li><span class="hc-dot hc-neutral"></span><code>organization</code><span class="hc-state hc-neutral">not established</span></li></ul><figcaption>7 evidence dimensions · no score</figcaption></figure>'
+  title: Evidence for every identifier
+  tagline: DID.is resolves decentralized identifiers and reports what was checked, what it proves and what it does not. No scores, no API key for the public API.
+  actions:
+    - text: Quickstart
+      link: /start/quickstart/
+      icon: right-arrow
+    - text: API reference
+      link: /reference/api/
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Try it now
+
+One request, no account. The response carries a plain-language verdict and seven evidence dimensions.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+```bash
+curl https://did.is/api/v1/resolve/did:web:did.is
+```
+  </TabItem>
+  <TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
+const r = await didis.resolve("did:web:did.is");
+console.log(r.verdict.headline);
+for (const d of r.dimensions) console.log(d.id, d.state);
+```
+  </TabItem>
+  <TabItem label="Python">
+```python
+from didis import DidisClient
+
+with DidisClient() as didis:
+    r = didis.resolve("did:web:did.is")
+    print(r["verdict"]["headline"])
+    for d in r["dimensions"]:
+        print(d["id"], d["state"])
+```
+  </TabItem>
+  <TabItem label="Rust">
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Adid.is")
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    println!("{}", r["verdict"]["headline"]);
+    for d in r["dimensions"].as_array().into_iter().flatten() {
+        println!("{} {}", d["id"], d["state"]);
+    }
+    Ok(())
+}
+```
+  </TabItem>
+</Tabs>
+
+```text title="Output (abridged)"
+Controlled by the operator of did.is; publishes Ed25519 verification keys.
+integrity     ESTABLISHED
+keys          ESTABLISHED
+control       NOT_ESTABLISHED
+origin        ESTABLISHED
+transport     ESTABLISHED
+history       NOT_ESTABLISHED
+organization  NOT_ESTABLISHED
+```
+
+## Choose a path
+
+<CardGrid>
+  <Card title="Use the web app" icon="laptop">
+    Search an identifier on [did.is](https://did.is), read the result, verify a credential or inspect an agent. No code needed.
+
+    [Search and explore →](/app/search/)
+  </Card>
+  <Card title="Build with the API" icon="seti:json">
+    20 public endpoints, RFC 9457 errors, TypeScript and Python SDKs.
+
+    [API overview →](/build/api-overview/)
+  </Card>
+  <Card title="Standards" icon="open-book">
+    Which specifications DID.is implements, at which version, and where it deliberately stops.
+
+    [Standards and conformance →](/reference/standards/)
+  </Card>
+  <Card title="Core concepts" icon="puzzle">
+    Verdicts, evidence dimensions and states, explained once.
+
+    [Core concepts →](/start/concepts/)
+  </Card>
+</CardGrid>
+
+## What DID.is covers
+
+<CardGrid>
+  <LinkCard title="Resolve" description="did:key, did:jwk, did:web and did:webvh 1.0, with W3C DID Resolution output." href="/build/resolution/" />
+  <LinkCard title="Verify credentials" description="VC Data Model 2.0 and 1.1 with Data Integrity or JOSE proofs, plus status lists." href="/build/credentials/" />
+  <LinkCard title="Check agents" description="Inspect MCP servers and A2A agent cards; verify delegation receipts." href="/build/agents/" />
+  <LinkCard title="Apply policies" description="Declarative rules evaluated against observed evidence. Each rule passes, fails or is indeterminate." href="/build/policies/" />
+</CardGrid>

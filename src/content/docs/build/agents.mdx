@@ -1,0 +1,176 @@
+---
+title: Agent trust APIs
+description: Inspect MCP servers and A2A agent cards, verify delegation chains, authorise tool calls and verify signed JWS from code.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+These endpoints help an application or gateway decide whether to let an AI agent use a tool. All except `verify-tool` and `fast-verify` use the intensive budget (2 requests per minute).
+
+| Endpoint | Question it answers |
+| --- | --- |
+| `GET /v1/mcp/inspect?endpoint=` | Which tools does this MCP server expose, and have they changed? |
+| `GET /v1/a2a/inspect?url=` | Is this A2A agent card well formed, and who signed it? |
+| `POST /v1/agents/verify-delegation` | Is this delegation chain valid, and what can the leaf do? |
+| `POST /v1/agents/authorize` | Does this chain allow this tool? (ALLOW / DENY) |
+| `GET /v1/agents/verify-tool?agent=&tool=&root=` | Does a registered chain allow this agent to use this tool? |
+| `POST /v1/fast-verify/jws` | Was this JWS signed by a key of the DID in its `kid`? |
+
+## Inspect an MCP server
+
+```bash
+curl 'https://did.is/api/v1/mcp/inspect?endpoint=https://mcp.deepwiki.com/mcp'
+```
+
+Abridged response:
+
+```json
+{
+  "endpoint": "https://mcp.deepwiki.com/mcp",
+  "status": "INSPECTED",
+  "mode": "SESSION",
+  "negotiatedVersion": "2025-11-25",
+  "serverInfo": { "name": "DeepWiki", "version": "2.14.3" },
+  "tools": [
+    {
+      "name": "ask_wiki_question",
+      "definitionSha256": "d9a292d4a04af2afd0545f2a723be7e0d73fe15287ce788870f1ccd71c36230b",
+      "schemaSha256": "fc67cfc7a6567b5e0626916674d71a6cea7adcd20e88636705dc5b577846f2e3",
+      "annotations": null,
+      "heuristicClass": "read_only",
+      "riskSignals": [],
+      "drift": "FIRST_OBSERVATION"
+    }
+  ]
+}
+```
+
+Store `definitionSha256` and `schemaSha256` for the tools you approve. If they change later, review the tool again. `heuristicClass` is a DID.is estimate; `annotations` are the server's own claims. A server that requires OAuth returns `AUTH_REQUIRED` and its tools are not listed.
+
+## Inspect an A2A agent card
+
+```bash
+curl 'https://did.is/api/v1/a2a/inspect?url=https://agent.example.com'
+```
+
+DID.is fetches `/.well-known/agent-card.json`, validates it against A2A 1.0 and verifies any `signatures[]`. The response has a `status` and a `checks[]` list (`fetch`, `schema`, `version`, `interfaces`, `origin`, `provider`, `security`, `signature`).
+
+If the URL has no agent card, the request fails with a problem instead of a result. For example, `url=https://did.is` currently returns `422 INVALID_DID_DOCUMENT` because `https://did.is/.well-known/agent-card.json` is not JSON. See [Errors and rate limits](/build/errors/).
+
+## Verify a delegation chain
+
+Send [Delegation Receipt v1](/reference/delegation-receipts/) JWS strings, root first.
+
+```bash
+curl -X POST https://did.is/api/v1/agents/verify-delegation \
+  -H 'content-type: application/json' \
+  -d '{"chain":["<root receipt>","<leaf receipt>"],"trustedRoots":["did:web:bank.example"],"register":false}'
+```
+
+The response has `status` (`VALID`, `INVALID` or `MALFORMED`), `headline`, `checks[]`, `links[]`, `root`, `leaf`, `effectiveCapabilities`, `notAfter` and `limitations`. With `register: true`, a `VALID` chain is stored for `verify-tool`.
+
+An empty chain shows the shape of a failure:
+
+```json
+{
+  "registered": false,
+  "result": {
+    "status": "MALFORMED",
+    "headline": "A chain must contain between 1 and 8 receipts.",
+    "checks": [
+      { "id": "depth", "label": "Chain depth", "status": "FAIL", "detail": "A chain must contain between 1 and 8 receipts." }
+    ],
+    "effectiveCapabilities": [],
+    "format": "DID.is Delegation Receipt v1 (experimental)",
+    "leaf": null,
+    "links": [],
+    "notAfter": null,
+    "root": null,
+    "trustedRoot": null,
+    "limitations": [
+      "Delegation receipts are a DID.is experimental format, not a ratified standard.",
+      "A valid chain proves who delegated what to whom; it does not prove the delegatee behaves within scope."
+    ]
+  }
+}
+```
+
+## Authorise a tool call
+
+`POST /v1/agents/authorize` verifies the chain and checks one tool against the leaf's capabilities.
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+const { authorization } = await didis.authorize(chain, "payments.refund", {
+  trustedRoots: ["did:web:bank.example"],
+});
+if (authorization.decision !== "ALLOW") throw new Error(authorization.reason);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+res = didis.authorize(chain, "payments.refund", trusted_roots=["did:web:bank.example"])
+if res["authorization"]["decision"] != "ALLOW":
+    raise PermissionError(res["authorization"]["reason"])
+```
+</TabItem>
+</Tabs>
+
+The `authorization` object has `agent`, `tool`, `decision` (`ALLOW` or `DENY`), `authorized` and `reason`. The response also contains the full `chain` result.
+
+## Check a registered agent
+
+After registering a chain with `register: true`, ask about an agent without sending the chain again:
+
+```bash
+curl 'https://did.is/api/v1/agents/verify-tool?agent=did:web:agent.example&tool=transfer'
+```
+
+```json
+{
+  "agent": "did:web:agent.example",
+  "tool": "transfer",
+  "decision": "DENY",
+  "authorized": false,
+  "reason": "no verified delegation is registered for this agent"
+}
+```
+
+Add `root=` to require a specific delegation root. Without a registered `VALID` chain the answer is always `DENY`.
+
+## Verify a signed JWS
+
+`POST /v1/fast-verify/jws` takes a compact JWS whose `kid` is a DID URL, resolves the DID and verifies the signature.
+
+```json
+{ "jws": "<compact JWS>", "relationship": "authentication" }
+```
+
+Without `relationship`, `assertionMethod` and then `authentication` are tried. The response has `status` (`VALID`, `INVALID`, `UNSUPPORTED`, `INDETERMINATE` or `MALFORMED`), `valid`, `headline`, `alg`, `kid`, `typ`, `payload` and `signingInputSha256`, plus `signer` and `relationship` when a key was found. A `kid` that is not a DID URL returns `INDETERMINATE`.
+
+## Example: a tool-call guard
+
+The SDKs have no middleware. This is a pattern you can write yourself: deny by default, and allow a call only when DID.is says `ALLOW`.
+
+```ts
+import { DidisClient, DidisError } from "@didis/client";
+
+const didis = new DidisClient();
+const TRUSTED_ROOTS = ["did:web:bank.example"];
+
+export async function guardToolCall(chain: string[], tool: string): Promise<void> {
+  try {
+    const { authorization } = await didis.authorize(chain, tool, { trustedRoots: TRUSTED_ROOTS });
+    if (authorization.decision === "ALLOW") return;
+    throw new Error(`denied: ${authorization.reason}`);
+  } catch (e) {
+    if (e instanceof DidisError && e.status === 429) {
+      throw new Error(`rate limited, retry after ${e.problem.retryAfter ?? "?"} s`);
+    }
+    throw e; // any error means the call is not allowed
+  }
+}
+```
+
+`authorize` uses the intensive budget. For frequent checks, register the chain once with `verifyDelegation(chain, { register: true })` and call `verifyTool(agent, tool, root)`, which uses the standard budget.
