@@ -1,0 +1,179 @@
+---
+title: Use cases
+description: Six everyday situations where DID.is answers a concrete question, with what it proves, what it does not, and the request to make.
+---
+
+import CaseDiagram from '../../../components/CaseDiagram.astro';
+
+DID.is answers one kind of question: **"What can actually be shown about this identifier, credential or agent, and what cannot?"** The six situations below show where that question comes up. Each one lists what DID.is checks, what the answer proves, what it leaves for you to decide, and the request to make.
+
+## A plain-language picture
+
+A DID is like **a digital business card that its owner publishes and controls**. The card lists the owner's public keys and, for `did:web`, lives on the owner's own website. Anyone can read it; nobody needs a central registry to issue it.
+
+DID.is is the **inspector who reads the card and writes down what was checked**: whether the card is intact, whether the keys on it are usable, whether the website links back to it, and whether its past versions can be proven. It does not say "trust this card". It says "here is what the evidence shows, and here is where the evidence stops". The decision stays with you.
+
+<div class="case-grid not-content">
+  <a href="#check-a-business-partner"><span class="cg-who">Partnerships</span><strong>Check a business partner</strong><span>Is this identifier really run from the partner's domain?</span></a>
+  <a href="#verify-a-digital-certificate"><span class="cg-who">Hiring and onboarding</span><strong>Verify a digital certificate</strong><span>Is this credential signed by its issuer and still active?</span></a>
+  <a href="#let-an-ai-agent-act-only-with-permission"><span class="cg-who">AI agents</span><strong>Let an agent act only with permission</strong><span>Was this agent delegated the right to use this tool?</span></a>
+  <a href="#review-an-mcp-server-before-connecting"><span class="cg-who">AI tooling</span><strong>Review an MCP server</strong><span>Which tools does it expose, and did they change?</span></a>
+  <a href="#get-told-when-an-identifier-changes"><span class="cg-who">Operations</span><strong>Get told when an identifier changes</strong><span>A signed webhook when a document, key or binding changes.</span></a>
+  <a href="#verify-signatures-at-the-gateway"><span class="cg-who">Platform teams</span><strong>Verify signatures at the gateway</strong><span>Was this request signed by a key of the sender's DID?</span></a>
+</div>
+
+## Check a business partner
+
+**Situation.** A supplier sends you its identifier, `did:web:supplier.example`, and asks you to accept invoices signed with it. Before you add it to your systems, you want to know that the identifier is published from the supplier's own domain and that its keys are usable.
+
+<CaseDiagram
+  label="Partner check: a supplier's DID is resolved and evaluated against your policy"
+  from={{ icon: 'building', title: 'Supplier', sub: 'did:web:supplier.example' }}
+  sends="DID"
+  checks={['Document fetched over trusted TLS', 'Website links back to the DID', 'Keys well-formed and usable', 'Your rules: method, binding, certificate']}
+  to={{ icon: 'team', title: 'Your onboarding team' }}
+  result={{ tone: 'ok', text: 'PASS · 4 of 4 rules' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>The document is served from that domain over a publicly trusted certificate.</li><li>The domain publishes a <a href="https://identity.foundation/.well-known/resources/did-configuration/">DID Configuration</a> that links back (origin binding).</li><li>Each of your rules passed or failed, with a reason.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>That the domain belongs to the company you think it does. Legal identity is never verified.</li><li>That the supplier is reliable to do business with.</li></ul></div>
+</div>
+
+Write your acceptance rules once and evaluate every partner against them:
+
+```bash
+curl -X POST https://did.is/api/v1/policies/evaluate \
+  -H 'content-type: application/json' \
+  -d '{"did":"did:web:did.is","policy":{"name":"partner-onboarding","rules":{"didResolution":"required","allowedMethods":["web","webvh"],"domainBinding":"required","tlsMinDaysRemaining":14}}}'
+```
+
+For `did:web:did.is` this returns `PASS` with "All 4 evaluated rules pass." See [Policies](/build/policies/#rules) for every rule.
+
+## Verify a digital certificate
+
+**Situation.** A candidate sends a digital diploma as a W3C verifiable credential. You want to know whether the university's key really signed it, whether it is within its validity dates, and whether the university has revoked it.
+
+<CaseDiagram
+  label="Credential check: a candidate's credential is verified against its issuer"
+  from={{ icon: 'person', title: 'Candidate', sub: 'presents a credential' }}
+  sends="credential"
+  checks={["Issuer's DID resolves", "Signature matches the issuer's key", 'Validity dates include today', 'Revocation status list is clear']}
+  to={{ icon: 'certificate', title: 'Recruiter' }}
+  result={{ tone: 'ok', text: 'VALID' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>The credential was signed by a key the issuer's DID authorises.</li><li>It has not expired and, if it has a status list, is not revoked or suspended.</li><li>Which check failed, if any, in plain words.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>That the issuer is a real university, or allowed to award that degree. Decide which issuers you accept.</li><li>That the candidate is the person named in it.</li></ul></div>
+</div>
+
+```bash
+curl -X POST https://did.is/api/v1/credentials/verify \
+  -H 'content-type: application/json' \
+  -d '{"credential": { … }}'
+```
+
+Accept only `VALID`. `INDETERMINATE` means a check could not finish, for example an unreachable status list, and is not a pass. See [Credentials](/build/credentials/#overall-status).
+
+## Let an AI agent act only with permission
+
+**Situation.** A bank lets a customer-service AI agent issue refunds. The bank delegated that right to a vendor, and the vendor delegated it to the agent. Before the refund tool runs, your gateway needs to confirm the chain of permission really leads back to the bank.
+
+<CaseDiagram
+  label="Agent authorisation: a delegation chain is checked before a tool call"
+  from={{ icon: 'agent', title: 'AI agent', sub: 'wants payments.refund' }}
+  sends="delegation chain"
+  checks={['Every receipt is signed by the delegator', 'Chain starts at a root you trust', 'No link widens the permissions', 'Leaf allows this tool and has not expired']}
+  to={{ icon: 'gateway', title: 'Tool gateway' }}
+  result={{ tone: 'ok', text: 'ALLOW or DENY' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>Who delegated what to whom, link by link, back to <code>did:web:bank.example</code>.</li><li>Whether the agent's final permissions include <code>payments.refund</code>, with a reason when they do not.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>That the agent will behave within its permissions.</li><li>That the refund itself is correct. Delegation receipts are an experimental DID.is format, not a ratified standard.</li></ul></div>
+</div>
+
+```bash
+curl -X POST https://did.is/api/v1/agents/authorize \
+  -H 'content-type: application/json' \
+  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments.refund","trustedRoots":["did:web:bank.example"]}'
+```
+
+An empty or broken chain is always denied: `{"decision":"DENY","reason":"A chain must contain between 1 and 8 receipts."}`. See [Authorise a tool call](/build/agents/#authorise-a-tool-call).
+
+## Review an MCP server before connecting
+
+**Situation.** Your team wants to connect an assistant to a third-party MCP server. You want to see which tools it exposes before approving it, and you want to notice if those tools change after you approved them.
+
+<CaseDiagram
+  label="MCP review: a server's tools are listed, fingerprinted and compared over time"
+  from={{ icon: 'server', title: 'MCP server', sub: 'mcp.deepwiki.com' }}
+  sends="tool list"
+  checks={['Every tool listed', 'Each definition fingerprinted', 'Read-only or side effects, estimated', 'Compared with the last observation']}
+  to={{ icon: 'team', title: 'Security reviewer' }}
+  result={{ tone: 'info', text: 'drift: UNCHANGED' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>The tools the server exposes today and a SHA-256 fingerprint of each definition.</li><li>Whether a tool changed since it was last seen (<code>FIRST_OBSERVATION</code>, <code>UNCHANGED</code> or <code>CHANGED</code>).</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>That the server is safe. Its self-description is inspected, not certified.</li><li>Tools behind a login. A server that needs OAuth returns <code>AUTH_REQUIRED</code>.</li></ul></div>
+</div>
+
+```bash
+curl 'https://did.is/api/v1/mcp/inspect?endpoint=https://mcp.deepwiki.com/mcp'
+```
+
+Store the fingerprints of the tools you approve. If one changes, review it again. See [Inspect an MCP server](/build/agents/#inspect-an-mcp-server).
+
+## Get told when an identifier changes
+
+**Situation.** Your product accepts signatures from a few dozen partner DIDs. If one of them rotates its keys, loses its domain binding or stops resolving, you want to know within the hour rather than when a customer complains.
+
+<CaseDiagram
+  label="Monitoring: watched identifiers are checked hourly and changes are sent as signed webhooks"
+  from={{ icon: 'globe', title: 'Watched DIDs', sub: 'chosen in the console' }}
+  sends="hourly check"
+  checks={['Document hash compared', 'Domain binding compared', 'Resolution failures and recoveries', 'Signed event on any change']}
+  to={{ icon: 'bell', title: 'Your webhook' }}
+  result={{ tone: 'info', text: 'document.changed' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>That the document changed, with the old and new hash and a diff.</li><li>That the domain binding changed, or the identifier stopped or resumed resolving.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>Why it changed or who changed it. A key rotation can be routine.</li><li>Changes between two hourly checks that were reverted.</li></ul></div>
+</div>
+
+Monitoring is a console feature: create a project, add identifiers and a webhook URL, then [verify each delivery's signature](/build/webhooks/). See [Monitoring and webhooks](/app/monitoring/).
+
+## Verify signatures at the gateway
+
+**Situation.** Partners call your API with requests signed as compact JWS, with their DID in the `kid` header. Your gateway needs a fast yes or no on every request.
+
+<CaseDiagram
+  label="Gateway check: a signed request is verified against the key in the sender's DID"
+  from={{ icon: 'building', title: 'Partner app', sub: 'signed request' }}
+  sends="JWS"
+  checks={["Sender's DID resolved", 'Key is in the DID document', 'Key is allowed to sign', 'Signature verifies']}
+  to={{ icon: 'gateway', title: 'Your API gateway' }}
+  result={{ tone: 'ok', text: 'valid: true' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>The JWS was signed by a key the sender's DID lists under <code>assertionMethod</code> or <code>authentication</code>, or the relationship you name.</li><li>The decoded payload and the signer.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>That the request is not a replay. Check timestamps or nonces yourself.</li><li>That the sender is allowed to call that endpoint. That is your access policy.</li></ul></div>
+</div>
+
+```bash
+curl -X POST https://did.is/api/v1/fast-verify/jws \
+  -H 'content-type: application/json' \
+  -d '{"jws":"eyJhbG…"}'
+```
+
+Uses the standard budget (20 requests per minute). For a compact verdict on a DID alone, use `GET /v1/fast-verify/did/{did}`. See [Verify a JWS against a DID](/reference/api/#verify-a-jws-against-a-did).
+
+## Next steps
+
+- [Quickstart](/start/quickstart/): your first request in under five minutes.
+- [Core concepts](/start/concepts/): the seven evidence dimensions and their states.
+- [API reference](/reference/api/): every endpoint with curl, TypeScript, Python and Rust samples.

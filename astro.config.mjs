@@ -95,6 +95,7 @@ export default defineConfig({
           items: [
             { label: 'Introduction', slug: 'start/introduction' },
             { label: 'Quickstart', slug: 'start/quickstart' },
+            { label: 'Use cases', slug: 'start/use-cases' },
             { label: 'Core concepts', slug: 'start/concepts' },
           ],
         },

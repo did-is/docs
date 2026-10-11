@@ -10,6 +10,10 @@ You can use it in two ways:
 - **Web app** at [did.is](https://did.is): paste an identifier, a credential or an agent URL and read the result.
 - **Public API** at `https://did.is/api`: anonymous, free and rate-limited, with SDKs for [TypeScript and Python](/build/sdks/).
 
+## In plain words
+
+A DID is like a digital business card that its owner publishes and controls. DID.is reads the card and writes down what was checked: whether it is intact, whether its keys are usable, whether the owner's website links back to it and whether its history can be proven. It does not tell you to trust the card; it shows where the evidence stops. See [Use cases](/start/use-cases/) for six everyday examples.
+
 ## What DID.is does
 
 | Task | Web app | API |
@@ -44,5 +48,6 @@ Public API requests may appear in an identifier's public observation history. If
 ## Next steps
 
 - [Quickstart](/start/quickstart/): first request in under five minutes.
+- [Use cases](/start/use-cases/): six situations, each with what DID.is proves and does not.
 - [Reading a result](/app/reading-a-result/): a guided tour of the web app result page.
 - [API overview](/build/api-overview/): base URL, budgets and encoding.

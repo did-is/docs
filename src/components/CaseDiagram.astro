@@ -1,0 +1,75 @@
+---
+/**
+ * Three-part use-case illustration: who presents something, what DID.is checks,
+ * and what the deciding party receives. Wide screens: one row. Phones: stacked.
+ */
+type Icon = 'building' | 'person' | 'certificate' | 'agent' | 'server' | 'bell' | 'gateway' | 'globe' | 'team';
+type Tone = 'ok' | 'bad' | 'neutral' | 'info';
+interface Party {
+  icon: Icon;
+  title: string;
+  sub?: string;
+}
+interface Props {
+  label: string;
+  from: Party;
+  sends: string;
+  checks: string[];
+  to: Party;
+  result: { tone: Tone; text: string };
+}
+const { label, from, sends, checks, to, result } = Astro.props;
+
+const ICONS: Record<Icon, string> = {
+  building:
+    '<path d="M4 21V5.5L12 3v18"/><path d="M12 9h8v12"/><path d="M2.5 21h19"/><path d="M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/>',
+  person: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
+  certificate:
+    '<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M7 8.5h10M7 12h6"/><circle cx="16.5" cy="17" r="2.5"/><path d="M15.3 19.2 14.5 22l2-1 2 1-.8-2.8"/>',
+  agent:
+    '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4.5"/><circle cx="12" cy="3.5" r="1"/><circle cx="9.5" cy="13" r="1.2"/><circle cx="14.5" cy="13" r="1.2"/><path d="M2.5 13v2M21.5 13v2"/>',
+  server:
+    '<rect x="4" y="3.5" width="16" height="7" rx="1.5"/><rect x="4" y="13.5" width="16" height="7" rx="1.5"/><path d="M8 7h.01M8 17h.01M12 7h5M12 17h5"/>',
+  bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/>',
+  gateway:
+    '<path d="M12 3 4 6v5.5c0 4.6 3.3 8.3 8 9.5 4.7-1.2 8-4.9 8-9.5V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+  globe:
+    '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 3.8 5.7 3.8 9s-1.2 6.3-3.8 9c-2.6-2.7-3.8-5.7-3.8-9S9.4 5.7 12 3z"/>',
+  team: '<circle cx="9" cy="8.5" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><path d="M15.5 14.6c2.6-.3 4.8 1.2 5.5 4"/>',
+};
+const icon = (name: Icon) =>
+  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+---
+
+<figure class="case-diagram not-content" aria-label={label}>
+  <div class="cd-row">
+    <div class="cd-party">
+      <span class="cd-icon" set:html={icon(from.icon)} />
+      <strong>{from.title}</strong>
+      {from.sub && <span class="cd-sub">{from.sub}</span>}
+    </div>
+    <div class="cd-arrow" aria-hidden="true">
+      <span class="cd-arrow-label">{sends}</span>
+      <span class="cd-arrow-line"></span>
+    </div>
+    <div class="cd-engine">
+      <span class="cd-engine-head">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>
+        DID.is checks
+      </span>
+      <ul>
+        {checks.map((c) => <li>{c}</li>)}
+      </ul>
+    </div>
+    <div class="cd-arrow" aria-hidden="true">
+      <span class="cd-arrow-label">evidence</span>
+      <span class="cd-arrow-line"></span>
+    </div>
+    <div class="cd-party">
+      <span class="cd-icon" set:html={icon(to.icon)} />
+      <strong>{to.title}</strong>
+      {to.sub && <span class="cd-sub">{to.sub}</span>}
+      <span class={`cd-result cd-${result.tone}`}>{result.text}</span>
+    </div>
+  </div>
+</figure>
