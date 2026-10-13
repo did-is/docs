@@ -228,7 +228,16 @@ Abridged live response:
 
 Store `definitionSha256` and `schemaSha256` for the tools you approve. If they change later, review the tool again. A tool's `drift` is `FIRST_OBSERVATION`, `UNCHANGED`, `CHANGED` or `ADDED`, measured against DID.is's previous observation of the same endpoint. A server that requires OAuth returns `AUTH_REQUIRED` and its tools are not listed.
 
-The response also has `checks[]` (`historyPersistence`, `transport`, `protocol`, `identity`, `inventory`, `drift`), `inventoryHash`, `classCounts`, `tls` and `limitations`.
+The response also has `checks[]`, `inventoryHash`, `classCounts`, `tls` and `limitations`. Each check is `PASS`, `WARN` or `SKIP`. `WARN` is a caution to read, not a failure: the inspection still succeeded.
+
+| Check | `PASS` | `WARN` | `SKIP` |
+| --- | --- | --- | --- |
+| `historyPersistence` | This inventory was stored for later drift comparison. | It was not stored; the next comparison may use an older snapshot. | |
+| `transport` | TLS to the server was validated. | No TLS. | |
+| `protocol` | The server answered stateless MCP discovery. | The server only supports the older session handshake. | |
+| `identity` | | Always: `serverInfo` is self-reported and not authenticated. | |
+| `inventory` | No tool has risk signals. | At least one tool has risk signals; review those tools. | |
+| `drift` | Definitions are identical to the previous observation. | Tools were added, removed or changed since then; review them. | First observation, or the hashing profile changed. |
 
 ## Inspect an A2A agent card
 

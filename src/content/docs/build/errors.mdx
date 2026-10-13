@@ -100,8 +100,9 @@ Error types defined by the W3C DID specifications use `https://www.w3.org/ns/did
 | `INTERNAL_ERROR` | 500 | Unexpected error. | Retry later; report it if it persists. |
 | `METHOD_NOT_SUPPORTED` | 501 | The DID method is not supported. | Use `did:key`, `did:jwk`, `did:web` or `did:webvh`. |
 | `FEATURE_NOT_SUPPORTED` | 501 | The feature is not implemented (for example DID URL paths). | — |
-| `UPSTREAM_UNAVAILABLE` | 502 | The remote host did not answer in time or failed. | Check the remote host; retry later. |
+| `UPSTREAM_UNAVAILABLE` | 424 | The identifier's or agent's own host did not answer in time or failed (DNS, TLS, timeout). | Check the remote host; retry later. |
 | `CAPACITY_EXHAUSTED` | 503 | DID.is is at its work capacity. | Retry after `Retry-After` with backoff. |
+| `SERVICE_UNAVAILABLE` | 503 | DID.is itself is briefly unavailable, for example during a restart. | Retry after `Retry-After` with backoff. |
 
 A request that runs longer than 45 seconds is ended with `408`.
 
