@@ -4,8 +4,24 @@ description: Official TypeScript and Python clients for the DID.is public API.
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-Both SDKs default to `https://did.is/api`, percent-encode identifiers exactly once and raise `DidisError` with the RFC 9457 problem body on non-2xx responses. Requests time out after 30 seconds by default; both clients accept a custom timeout.
+The SDKs are thin clients for the [public API](/build/api-overview/): one method per endpoint, typed responses and a single error type. They do the routine work for you: the base URL, encoding identifiers, timeouts and turning error responses into exceptions.
+
+The SDKs **add no checks of their own**. Every result comes from the API and means exactly what the API page for that endpoint says. Anything the SDKs do not cover, you can call over HTTP.
+
+<CaseDiagram
+  label="Your code calls an SDK method; the SDK sends the HTTPS request to did.is/api and returns the parsed result or raises DidisError"
+  from={{ icon: 'team', title: 'Your code', sub: 'didis.resolve(…)' }}
+  sends="method call"
+  engine="The SDK handles"
+  checks={['Base URL https://did.is/api', 'Percent-encodes identifiers once', '30-second timeout by default', 'Non-2xx answers become DidisError']}
+  returns="typed result"
+  to={{ icon: 'team', title: 'Your code' }}
+  result={{ tone: 'info', text: 'result or DidisError' }}
+/>
+
+## What you get
 
 | | TypeScript | Python |
 | --- | --- | --- |
@@ -13,6 +29,14 @@ Both SDKs default to `https://did.is/api`, percent-encode identifiers exactly on
 | Source | [did-is/didis-js](https://github.com/did-is/didis-js) | [did-is/didis-py](https://github.com/did-is/didis-py) |
 | Runtime | Any runtime with `fetch`: Node 18+, Deno, Bun, browsers, edge. Zero dependencies, ESM. | Python 3.11+, `httpx`. Sync `DidisClient` and async `AsyncDidisClient`. |
 | Responses | Typed objects | Plain `dict`s typed with `TypedDict` (`didis.types`) |
+| Timeout | `new DidisClient({ timeoutMs })`, default 30 000 | `DidisClient(timeout=…)`, default 30.0 seconds |
+
+## What they do not do
+
+- **Retries.** A `429` or `503` raises `DidisError`; you decide when to retry (see [Errors and rate limits](/build/errors/#retrying-in-the-sdks)).
+- **Directory and claims.** These endpoints have no SDK method; call them over HTTP (see the [API reference](/reference/api/#directory-and-claims)).
+- **Newer request options.** Options such as `expectedNonce` and `trustedIssuerCertificates` for [EU wallet credentials](/build/eu-credentials/) are not in 0.1.0; call the API directly for those.
+- **Middleware.** There is no ready-made agent or gateway middleware; see the [tool-call guard pattern](/build/agents/#example-a-tool-call-guard).
 
 ## Install
 
@@ -25,6 +49,14 @@ npm install @didis/client
 <TabItem label="Python">
 ```bash
 pip install didis-py
+```
+</TabItem>
+<TabItem label="Rust">
+```bash
+# No official Rust SDK: use any HTTP client.
+cargo add reqwest --features json
+cargo add serde_json
+cargo add tokio --features full
 ```
 </TabItem>
 </Tabs>
@@ -62,6 +94,20 @@ with DidisClient() as didis:
         print(e.status, e.problem.get("code"), e.problem.get("detail"))
 ```
 </TabItem>
+<TabItem label="Rust">
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Adid.is")
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    println!("{}", r["verdict"]["headline"]);
+    Ok(())
+}
+```
+</TabItem>
 </Tabs>
 
 Async Python:
@@ -77,6 +123,18 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+In Rust, percent-encode the identifier once, and on non-2xx responses read the RFC 9457 problem body and the `Retry-After` header yourself (see [Errors](/build/errors/)).
+
+## Reading the result
+
+| What happens | What it means | What to do |
+| --- | --- | --- |
+| The method returns | The API answered 2xx. | Read the result fields, for example `verdict` or `status`. |
+| `DidisError`, `status` 429 or 503 | Budget used up, or service busy. `problem.retryAfter` holds the `Retry-After` value. | Wait that long, then retry. |
+| `DidisError`, other 4xx | The request itself is wrong, or the method or feature is not supported. | Fix the request; `problem.code` says why. Do not retry unchanged. |
+| `DidisError`, 5xx | DID.is or the remote host failed. | Retry later. |
+| Timeout | No answer within the client timeout. | Retry later, or raise the timeout. |
 
 ## Methods
 
@@ -101,33 +159,11 @@ asyncio.run(main())
 | `fastVerifyJws(jws, relationship?)` | `fast_verify_jws(jws, relationship=None)` | `POST /v1/fast-verify/jws` |
 | `verifyCustomerMonitorSignature(…)` | `verify_customer_monitor_signature(…)` | [Webhook signatures](/build/webhooks/) |
 
-Directory and claims endpoints have no SDK method yet; call them over HTTP (see the [API reference](/reference/api/#directory-and-claims)).
-
-## Rust and other languages
-
-There is no official Rust SDK yet. The API is plain JSON over HTTPS, so any HTTP client works. In Rust, use `reqwest` with `serde_json`:
-
-```bash
-cargo add reqwest --features json
-cargo add serde_json
-cargo add tokio --features full
-```
-
-```rust
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let r: serde_json::Value = reqwest::get("https://did.is/api/v1/resolve/did%3Aweb%3Adid.is")
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-    println!("{}", r["verdict"]["headline"]);
-    Ok(())
-}
-```
-
-Percent-encode the identifier once, and on non-2xx responses read the RFC 9457 problem body and the `Retry-After` header yourself (see [Errors](/build/errors/)).
-
 ## No CLI
 
 There is no published DID.is command-line tool. Use `curl` or the SDKs.
+
+## Next steps
+
+- [API overview](/build/api-overview/) for budgets and conventions.
+- [Resolution](/build/resolution/) for your first real call.

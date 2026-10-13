@@ -4,8 +4,31 @@ description: Evaluate a DID, and optionally a credential, against your own accep
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-A policy is a set of rules you choose, for example "the DID must use `did:web` or `did:webvh`, sign with Ed25519 and have a verified domain binding". `POST /v1/policies/evaluate` resolves the DID, evaluates each rule and returns PASS or FAIL per rule. It uses the intensive budget (2 requests per minute).
+A policy is a set of rules you choose, for example "the DID must use `did:web` or `did:webvh`, sign with Ed25519 and have a verified domain binding". `POST /v1/policies/evaluate` resolves the DID, checks each rule against the evidence and returns `PASS` or `FAIL` per rule, with a reason.
+
+You write the rules; DID.is only **evaluates** them. There are no weights and no scores. A rule that cannot be evaluated is `INDETERMINATE`, which never counts as a pass.
+
+<CaseDiagram
+  label="Your service sends a DID and its rules; DID.is resolves the DID and evaluates each rule"
+  from={{ icon: 'team', title: 'Your service', sub: 'DID + your rules' }}
+  sends="POST /v1/policies/evaluate"
+  checks={['Resolve the DID with evidence', 'Evaluate each rule you set', 'Check the credential, if supplied']}
+  to={{ icon: 'team', title: 'Your service' }}
+  result={{ tone: 'info', text: 'PASS / FAIL per rule' }}
+/>
+
+## What you get
+
+- **One result per rule** you set, with the value DID.is observed and a message.
+- **An overall status** that is `FAIL` if any rule fails.
+- **The full resolution** the rules were evaluated against, and the credential result if you sent one.
+
+## What it does not tell you
+
+- **Whether to trust the organisation behind the DID.** A policy evaluates technical evidence only.
+- **Anything about rules you did not set.** All rules are optional; only the rules in your request are evaluated.
 
 ## Request
 
@@ -20,6 +43,8 @@ A policy is a set of rules you choose, for example "the DID must use `did:web` o
 }
 ```
 
+The endpoint uses the intensive budget (2 requests per minute). See [Errors and rate limits](/build/errors/).
+
 <Tabs syncKey="lang">
 <TabItem label="curl">
 ```bash
@@ -30,6 +55,9 @@ curl -X POST https://did.is/api/v1/policies/evaluate \
 </TabItem>
 <TabItem label="TypeScript">
 ```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
 const res = await didis.evaluatePolicy("did:web:did.is", {
   rules: { didResolution: "required", domainBinding: "required" },
 });
@@ -38,11 +66,14 @@ console.log(res.evaluation.status, res.evaluation.headline);
 </TabItem>
 <TabItem label="Python">
 ```python
-res = didis.evaluate_policy(
-    "did:web:did.is",
-    {"rules": {"didResolution": "required", "domainBinding": "required"}},
-)
-print(res["evaluation"]["status"], res["evaluation"]["headline"])
+from didis import DidisClient
+
+with DidisClient() as didis:
+    res = didis.evaluate_policy(
+        "did:web:did.is",
+        {"rules": {"didResolution": "required", "domainBinding": "required"}},
+    )
+    print(res["evaluation"]["status"], res["evaluation"]["headline"])
 ```
 </TabItem>
 <TabItem label="Rust">
@@ -67,13 +98,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 </TabItem>
 </Tabs>
 
-## Response
+To evaluate a credential together with the DID, pass it as the third argument (`evaluatePolicy(did, policy, credential)` / `evaluate_policy(did, policy, credential=…)`).
+
+Response from the live API (abridged):
 
 ```json
 {
   "evaluation": {
     "did": "did:web:did.is",
-    "evaluatedAt": "2026-10-11T00:28:39Z",
+    "evaluatedAt": "2026-10-13T09:09:08Z",
     "status": "PASS",
     "headline": "All 2 evaluated rules pass.",
     "rulesEvaluated": 2,
@@ -100,7 +133,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Each rule is `PASS`, `FAIL`, `INDETERMINATE` or `NOT_APPLICABLE`. The overall status ignores `NOT_APPLICABLE` rules and is:
+## Reading the result
+
+| Rule `status` | What it means | What to do |
+| --- | --- | --- |
+| `PASS` | The evidence meets the rule. | Nothing. |
+| `FAIL` | The evidence does not meet the rule. `message` and `observedValue` say why. | Reject, or relax the rule if it is too strict for your case. |
+| `INDETERMINATE` | The rule could not be evaluated, for example the DID did not resolve. | Treat it as not passed. |
+| `NOT_APPLICABLE` | The rule does not apply, for example a rule marked `"optional"`, or a TLS rule for a `did:key`. | Ignored in the overall status. |
+
+The overall `evaluation.status` ignores `NOT_APPLICABLE` rules and is:
 
 - `FAIL` if any rule fails,
 - otherwise `INDETERMINATE` if any rule could not be evaluated (or no rule applies),
@@ -125,4 +167,7 @@ All rules are optional. Only the rules you set are evaluated.
 | `credentialStatus` | `"active"` | The supplied credential verifies and its status is clear. |
 | `credentialIssuerMustBeSubject` | `true` | The supplied credential's issuer is the evaluated DID. |
 
-A policy evaluates technical evidence. It does not decide whether you should trust the organisation behind a DID.
+## Next steps
+
+- [Resolution](/build/resolution/) explains the evidence the rules are evaluated against.
+- [Credentials](/build/credentials/) explains the credential checks behind `credentialStatus`.

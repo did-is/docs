@@ -3,13 +3,69 @@ title: Errors and rate limits
 description: RFC 9457 problem responses, stable error codes, HTTP status mapping, rate limits and Retry-After.
 ---
 
-## Problem responses
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-Every error is an RFC 9457 problem object with `Content-Type: application/problem+json` and a stable `code`. Use `code` in your logic, not `title` or `detail`.
+When a request cannot be answered, DID.is returns an **RFC 9457 problem object** instead of a result. It has `Content-Type: application/problem+json` and a stable `code`, such as `METHOD_NOT_SUPPORTED` or `RATE_LIMITED`. Use `code` in your logic, not `title` or `detail`.
 
+A problem means DID.is **could not produce an answer**. It is not a verdict about the identifier. A credential that fails its checks, or a policy rule that fails, is a normal `200` result, not an error.
+
+<CaseDiagram
+  label="Your client sends a request; DID.is answers with a result, or with a problem object and sometimes Retry-After"
+  from={{ icon: 'team', title: 'Your client', sub: 'any request' }}
+  sends="request"
+  checks={['Request budget', 'Valid DID, URL and body', 'Supported method or feature', 'Remote host reachable and public']}
+  returns="problem"
+  to={{ icon: 'team', title: 'Your client' }}
+  result={{ tone: 'bad', text: 'code + status (+ Retry-After)' }}
+/>
+
+## What a problem tells you
+
+- **What went wrong,** as a stable `code` and the HTTP status.
+- **Where it stopped,** for resolution errors: the `trace` up to the failing stage.
+- **When to try again,** for `429` and `503`: the `Retry-After` header.
+
+## What it does not tell you
+
+- **Anything about the identifier's trustworthiness.** `UPSTREAM_UNAVAILABLE` means the remote host did not answer in time, not that the DID is bad.
+- **Whether a retry will work,** for 4xx errors other than `429`. The same request will fail again.
+
+## Example
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
 ```bash
 curl https://did.is/api/v1/resolve/did:example:123
 ```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient, DidisError } from "@didis/client";
+
+const didis = new DidisClient();
+try {
+  await didis.resolve("did:example:123");
+} catch (e) {
+  if (e instanceof DidisError) console.log(e.status, e.problem.code, e.problem.detail);
+  else throw e;
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient, DidisError
+
+with DidisClient() as didis:
+    try:
+        didis.resolve("did:example:123")
+    except DidisError as e:
+        print(e.status, e.problem.get("code"), e.problem.get("detail"))
+```
+</TabItem>
+</Tabs>
+
+Live response, `501`:
 
 ```json
 {
@@ -19,14 +75,14 @@ curl https://did.is/api/v1/resolve/did:example:123
   "detail": "did:example is not supported (supported: did:key, did:jwk, did:web, did:webvh)",
   "code": "METHOD_NOT_SUPPORTED",
   "trace": [
-    { "stage": "syntax.parse", "label": "DID syntax (DID Core §3.1)", "status": "FAIL", "detail": "did:example is not supported" }
+    { "stage": "syntax.parse", "label": "DID syntax (DID Core §3.1)", "status": "FAIL", "startedUs": 0, "durationUs": 2, "detail": "did:example is not supported" }
   ]
 }
 ```
 
-Resolution errors include the `trace` up to the failing stage. Error types defined by the W3C DID specifications use `https://www.w3.org/ns/did#<CODE>`; DID.is-specific types use `https://did.is/problems#<CODE>`.
+Error types defined by the W3C DID specifications use `https://www.w3.org/ns/did#<CODE>`; DID.is-specific types use `https://did.is/problems#<CODE>`.
 
-## Codes
+## Reading the result
 
 | `code` | Status | Meaning | What to do |
 | --- | --- | --- | --- |
@@ -69,10 +125,12 @@ Retry-After: 27
 
 `503 CAPACITY_EXHAUSTED` means the service as a whole is busy, not that you exceeded your budget. It also carries `Retry-After`. Retry with exponential backoff and jitter.
 
-## Handling errors in the SDKs
+## Retrying in the SDKs
 
 Both SDKs raise `DidisError` for non-2xx responses. The problem body is in `problem`, and the `Retry-After` value in `problem.retryAfter` (TypeScript) or `problem["retryAfter"]` (Python).
 
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
 ```ts
 import { DidisClient, DidisError } from "@didis/client";
 
@@ -91,7 +149,8 @@ async function resolveWithRetry(did: string, attempts = 3) {
   }
 }
 ```
-
+</TabItem>
+<TabItem label="Python">
 ```python
 import random, time
 from didis import DidisClient, DidisError
@@ -105,5 +164,12 @@ def resolve_with_retry(didis: DidisClient, did: str, attempts: int = 3):
                 raise
             time.sleep(float(e.problem.get("retryAfter", 1)) + random.random() / 2)
 ```
+</TabItem>
+</Tabs>
 
 Do not retry 4xx errors other than 429: the same request will fail again.
+
+## Next steps
+
+- [API overview](/build/api-overview/) lists the budgets per endpoint.
+- [Service status](https://did.is/status) shows whether a component is degraded.

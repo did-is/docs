@@ -4,45 +4,59 @@ description: Follow each resolution stage as it completes with server-sent event
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
+import Flow from '../../../components/Flow.astro';
 
-`GET /v1/stream/{did}` resolves an identifier and sends each stage as a server-sent event while it runs. It uses the intensive budget (2 requests per minute).
+`GET /v1/stream/{did}` resolves a DID like [`/v1/resolve`](/build/resolution/), but sends each stage as a server-sent event as soon as it finishes: parsing the DID, DNS, the HTTPS fetch, domain linkage and so on. Use it to show progress in a UI, or to see where a slow or failing resolution stops.
+
+The final result is the **same resolution** as `/v1/resolve`. The stream adds timing and order; it does not add any other evidence.
+
+<CaseDiagram
+  label="Your client opens an event stream; DID.is resolves the DID and sends each stage as it completes"
+  from={{ icon: 'team', title: 'Your client', sub: 'a DID' }}
+  sends="GET /v1/stream"
+  checks={['DID syntax', 'DNS and address pinning', 'TLS and HTTP fetch', 'Document parsing', 'Domain linkage, history', 'Evidence assembly']}
+  returns="events"
+  to={{ icon: 'team', title: 'Your client' }}
+  result={{ tone: 'info', text: 'stage … result … done' }}
+/>
 
 ## Event order
 
-1. One `stage` event per completed stage.
-2. Then either `result` (the full resolution, same shape as `/v1/resolve`) or `error` (an RFC 9457 problem).
-3. Then `done`.
+<Flow
+  label="Order of server-sent events"
+  steps={[
+    { title: 'stage', body: 'One event per completed stage, in order.', code: 'event: stage' },
+    { title: 'result or error', body: 'The full resolution, or an RFC 9457 problem.', code: 'event: result' },
+    { title: 'done', body: 'The stream ends.', code: 'event: done' },
+  ]}
+/>
 
-```bash
-curl -N https://did.is/api/v1/stream/did:web:did.is
-```
+## What you get
 
-```text
-event: stage
-data: {"stage":"syntax.parse","label":"DID syntax (DID Core §3.1)","status":"PASS","startedUs":0,"durationUs":3,"detail":"method 'web' · 14 characters"}
+- **Each stage** with `stage`, `label`, `status`, `startedUs`, `durationUs` and `detail`. The same stages appear in the `trace` array of `/v1/resolve`.
+- **The full resolution** in the `result` event, same shape as `/v1/resolve`.
 
-event: stage
-data: {"stage":"method.web.transform","label":"DID-to-HTTPS transformation","status":"PASS","startedUs":40,"durationUs":10,"detail":"did:web:did.is → https://did.is/.well-known/did.json"}
+## What it does not tell you
 
-event: stage
-data: {"stage":"egress.dns","label":"DNS resolution and address pinning","status":"PASS","startedUs":62,"durationUs":923,"detail":"did.is pinned to 104.21.76.195 (all answers public)"}
+- **Anything the resolution does not.** The stream reports the same evidence with the same [limits](/build/resolution/#what-is-not-checked).
+- **Fresh network stages for a cached result.** Without `?noCache=true`, a cached result shows a `cache.hit` stage instead of the DNS and fetch stages. The SDKs stream with `noCache` by default.
 
-…
+## Request
 
-event: result
-data: { …full resolution… }
-
-event: done
-data: {}
-```
-
-Each stage has `stage`, `label`, `status`, `startedUs`, `durationUs` and `detail`. The same stages appear in the `trace` array of `/v1/resolve`.
-
-## With the SDKs
+The endpoint uses the intensive budget (2 requests per minute). See [Errors and rate limits](/build/errors/).
 
 <Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -N 'https://did.is/api/v1/stream/did:web:did.is?noCache=true'
+```
+</TabItem>
 <TabItem label="TypeScript">
 ```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
 for await (const ev of didis.stream("did:web:did.is")) {
   if (ev.event === "stage") console.log(ev.data.status, ev.data.label);
   if (ev.event === "result") console.log(ev.data.verdict.headline);
@@ -52,15 +66,66 @@ for await (const ev of didis.stream("did:web:did.is")) {
 </TabItem>
 <TabItem label="Python">
 ```python
-for event, data in didis.stream("did:web:did.is"):
-    if event == "stage":
-        print(data["status"], data["label"])
-    elif event == "result":
-        print(data["verdict"]["headline"])
-    elif event == "error":
-        print(data.get("code"), data.get("detail"))
+from didis import DidisClient
+
+with DidisClient() as didis:
+    for event, data in didis.stream("did:web:did.is"):
+        if event == "stage":
+            print(data["status"], data["label"])
+        elif event == "result":
+            print(data["verdict"]["headline"])
+        elif event == "error":
+            print(data.get("code"), data.get("detail"))
 ```
 </TabItem>
 </Tabs>
 
-The SDKs resolve fresh (`noCache`) by default when streaming and stop after `done`.
+The SDKs resolve fresh (`noCache`) by default when streaming and stop after `done`. Pass `{ noCache: false }` / `no_cache=False` to accept a cached result.
+
+Start of a live stream (`detail` lines shortened):
+
+```text
+event: stage
+data: {"stage":"syntax.parse","label":"DID syntax (DID Core §3.1)","status":"PASS","startedUs":0,"durationUs":3,"detail":"method 'web' · 14 characters"}
+
+event: stage
+data: {"stage":"method.web.transform","label":"DID-to-HTTPS transformation","status":"PASS","startedUs":6,"durationUs":9,"detail":"did:web:did.is → https://did.is/.well-known/did.json"}
+
+event: stage
+data: {"stage":"egress.dns","label":"DNS resolution and address pinning","status":"PASS","startedUs":28,"durationUs":1629,"detail":"did.is pinned to 104.21.76.195 (all answers public)"}
+
+event: stage
+data: {"stage":"egress.fetch","label":"TLS handshake and HTTP exchange","status":"PASS","startedUs":1779,"durationUs":42936,"detail":"GET https://did.is/.well-known/did.json → HTTP 200 · 678 bytes; …"}
+
+…
+
+event: stage
+data: {"stage":"evidence.assemble","label":"Evidence assembly","status":"PASS","startedUs":89080,"durationUs":125,"detail":"7 dimensions · 7 graph nodes · verdict RESOLVED"}
+
+event: result
+data: { …full resolution… }
+
+event: done
+data: {}
+```
+
+## Reading the result
+
+| Stage `status` | What it means |
+| --- | --- |
+| `PASS` | The stage completed and its check passed. |
+| `FAIL` | The stage failed. An `error` event usually follows with the problem. |
+| `WARN` | The stage completed with a finding worth reading in `detail`. |
+| `INFO` | Information only, for example `cache.hit`. |
+
+| Final event | What to do |
+| --- | --- |
+| `result` | Read it like a [`/v1/resolve` result](/build/resolution/#reading-the-result). |
+| `error` | Handle the problem `code` as on [Errors and rate limits](/build/errors/). |
+
+If the request is refused before the stream starts (for example `429`), you receive a normal problem response instead of an event stream.
+
+## Next steps
+
+- [Resolution](/build/resolution/) explains the result and its evidence.
+- Search a DID on [did.is](https://did.is); the result page shows the same stages as a trace.

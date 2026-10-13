@@ -4,17 +4,51 @@ description: Resolve DIDs with evidence or in W3C format, dereference DID URLs, 
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
+
+Resolving a DID means fetching its DID document: the public keys and service endpoints the identifier publishes. DID.is resolves the identifier for you and also reports **what the result shows**. The answer has a short verdict and seven evidence dimensions, such as key material, origin binding and verifiable history.
+
+DID.is only **reports evidence**. It does not give trust scores and it does not decide who you should trust. A DID that resolves correctly can still belong to anyone.
+
+<CaseDiagram
+  label="Your application asks DID.is to resolve a DID; DID.is fetches the document and returns it with evidence"
+  from={{ icon: 'team', title: 'Your application', sub: 'a DID' }}
+  sends="GET /v1/resolve"
+  checks={['DID syntax and method', 'Fetch the document safely', 'Keys are well formed', 'Domain binding and TLS', 'Verifiable history, when the method has one']}
+  to={{ icon: 'team', title: 'Your application' }}
+  result={{ tone: 'info', text: 'Document + 7 dimensions' }}
+/>
+
+## What is checked
+
+- **Syntax and method.** The DID must be valid syntax and use a supported method: `did:key`, `did:jwk`, `did:web` or `did:webvh`.
+- **Safe fetching.** For `did:web` and `did:webvh`, the host must resolve only to public addresses (see [Egress protection](/reference/egress/)).
+- **Document integrity.** The document is JSON and its `id` equals the requested DID.
+- **Key material.** Every verification method is a well-formed key, usable for the relationships it is declared for.
+- **Origin binding.** For web-based DIDs, the DIF Well-Known DID Configuration of the domain is verified.
+- **Transport.** The TLS certificate the origin presented at resolution time.
+- **Verifiable history.** For `did:webvh`, the signed log of document versions.
+
+## What is not checked
+
+- **Real-world identity.** The `organization` dimension is always `NOT_ESTABLISHED` for every method. A domain name is not a legal entity.
+- **Who holds the private keys.** Well-formed keys say nothing about who controls them.
+- **Past versions of `did:web` documents.** `did:web` keeps no verifiable history, so whoever controls the web server and DNS can replace the document.
+
+Every response repeats these limits in its `limitations` array.
 
 ## Choose an endpoint
 
 | Endpoint | Returns | Use it when |
 | --- | --- | --- |
-| `GET /v1/resolve/{did}` | Document, metadata, verdict, seven dimensions, evidence, graph, trace | You want to know what the result proves. |
+| `GET /v1/resolve/{did}` | Document, metadata, verdict, seven dimensions, evidence, graph, trace | You want to know what the result shows. |
+| `GET /v1/fast-verify/did/{did}` | Compact verdict: outcome, headline, dimension states, keys, document hash | Gateways and agents that need a short answer. |
 | `GET /1.0/identifiers/{did}` | W3C DID Resolution HTTPS binding | You need a standard resolver interface. |
-| `GET /v1/fast-verify/did/{did}` | Compact verdict: outcome, headline, dimension states, keys, document hash | Gateways and agents that need a quick answer. |
 | `GET /v1/dereference/{didUrl}` | One resource selected by a DID URL | You need a single key or service. |
 
-## Resolve with evidence
+## Request
+
+Put the DID in the path. The SDKs percent-encode it for you. These endpoints use the standard budget (20 requests per minute); resolving a `did:webvh` identifier uses the intensive budget. See [Errors and rate limits](/build/errors/).
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -24,14 +58,23 @@ curl https://did.is/api/v1/resolve/did:web:did.is
 </TabItem>
 <TabItem label="TypeScript">
 ```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
 const r = await didis.resolve("did:web:did.is");
 console.log(r.verdict.outcome, r.verdict.headline);
+for (const d of r.dimensions) console.log(d.id, d.state);
 ```
 </TabItem>
 <TabItem label="Python">
 ```python
-r = didis.resolve("did:web:did.is")
-print(r["verdict"]["outcome"], r["verdict"]["headline"])
+from didis import DidisClient
+
+with DidisClient() as didis:
+    r = didis.resolve("did:web:did.is")
+    print(r["verdict"]["outcome"], r["verdict"]["headline"])
+    for d in r["dimensions"]:
+        print(d["id"], d["state"])
 ```
 </TabItem>
 <TabItem label="Rust">
@@ -52,7 +95,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Top-level fields: `did`, `method`, `didDocument`, `didResolutionMetadata`, `didDocumentMetadata`, `verdict`, `dimensions`, `evidence`, `graph`, `trace`, `limitations`, `resolver`, `observedAt`, `cached`.
 
-Results are cached. Add `?noCache=true` to resolve fresh. See [Core concepts](/start/concepts/) for the verdict and dimensions.
+Results are cached. Add `?noCache=true` (SDK: `noCache` / `no_cache`) to resolve fresh.
+
+For a shorter answer, `GET /v1/fast-verify/did/{did}` returns `did`, `resolved`, `outcome`, `headline`, `statements`, `dimensions` (id and state only), `keys`, `domainBinding`, `documentSha256`, `observedAt` and `cached`. The SDK methods are `fastVerifyDid` and `fast_verify_did`.
+
+## Reading the result
+
+The verdict for `did:web:did.is`, abridged from a live response:
+
+```json
+{
+  "verdict": {
+    "outcome": "RESOLVED",
+    "headline": "Controlled by the operator of did.is; publishes Ed25519 verification keys.",
+    "statements": ["Origin verified via DIF configuration.", "No verifiable history.", "Organization not established."]
+  },
+  "dimensions": [
+    { "id": "integrity", "label": "Document integrity", "state": "ESTABLISHED" },
+    { "id": "keys", "label": "Key material", "state": "ESTABLISHED" },
+    { "id": "control", "label": "Update authority", "state": "NOT_ESTABLISHED" },
+    { "id": "origin", "label": "Origin binding", "state": "ESTABLISHED" },
+    { "id": "transport", "label": "Transport security", "state": "ESTABLISHED" },
+    { "id": "history", "label": "Verifiable history", "state": "NOT_ESTABLISHED" },
+    { "id": "organization", "label": "Real-world identity", "state": "NOT_ESTABLISHED" }
+  ]
+}
+```
+
+Each dimension also has `statement`, `proves` and `doesNotProve` lines. Read every dimension on its own; there is no total score.
+
+`verdict.outcome` is `RESOLVED`, `RESOLVED_WITH_WARNINGS` (a dimension `FAILED`, a key is invalid, or the document has warnings) or `DEACTIVATED`.
+
+| Dimension state | What it means | What to do |
+| --- | --- | --- |
+| `ESTABLISHED` | DID.is found evidence for this dimension. | Read `proves` and `doesNotProve` to see how far it goes. |
+| `SELF_CERTIFYING` | True by construction: the identifier itself encodes it (`did:key`, `did:jwk`). | No outside source is involved; that is expected for these methods. |
+| `NOT_ESTABLISHED` | No evidence for this dimension. Often normal: `did:web` has no verifiable history. | Decide whether your use needs it. |
+| `FAILED` | Evidence was found and it is wrong (for example a broken domain binding). | Treat it as a problem with the identifier. |
+| `INDETERMINATE` | The check could not be completed. | Retry later; do not read it as passed. |
+| `NOT_APPLICABLE` | The dimension does not apply to this method. | Nothing to do. |
+
+If the DID cannot be resolved at all, you receive an RFC 9457 problem instead, such as `501 METHOD_NOT_SUPPORTED` or `404 NOT_FOUND`. See [Errors and rate limits](/build/errors/). [Core concepts](/start/concepts/) explains the verdict and dimensions in more detail.
 
 ## W3C DID Resolution
 
@@ -61,10 +144,26 @@ Results are cached. Add `?noCache=true` to resolve fresh. See [Core concepts](/s
 - `application/did-resolution`: the full resolution result (`didDocument`, `didResolutionMetadata`, `didDocumentMetadata`).
 - `application/did` (or `*/*`): the DID document only.
 
+<Tabs syncKey="lang">
+<TabItem label="curl">
 ```bash
 curl -H 'Accept: application/did-resolution' \
   https://did.is/api/1.0/identifiers/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
 ```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const w3c = await didis.resolveW3c("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK");
+console.log(w3c.didDocument.id);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+w3c = didis.resolve_w3c("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
+print(w3c["didDocument"]["id"])
+```
+</TabItem>
+</Tabs>
 
 This endpoint uses the specification's status codes: 400 invalid DID, 404 not found, 406 representation not supported, 410 deactivated, 501 method not supported. Other errors are 500. DID URLs are dereferenced here as well.
 
@@ -72,14 +171,30 @@ This endpoint uses the specification's status codes: 400 invalid DID, 404 not fo
 
 Encode `#` as `%23`.
 
+<Tabs syncKey="lang">
+<TabItem label="curl">
 ```bash
 curl https://did.is/api/v1/dereference/did:web:did.is%23key-1
 ```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const key = await didis.dereference("did:web:did.is#key-1");
+console.log(key.contentStream);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+key = didis.dereference("did:web:did.is#key-1")
+print(key["contentStream"])
+```
+</TabItem>
+</Tabs>
 
 ```json
 {
   "@context": "https://w3id.org/did-resolution/v1",
-  "dereferencingMetadata": { "contentType": "application/json", "retrieved": "2026-10-11T00:38:33Z" },
+  "dereferencingMetadata": { "contentType": "application/json", "retrieved": "2026-10-13T09:07:34Z" },
   "contentStream": {
     "controller": "did:web:did.is",
     "id": "did:web:did.is#key-1",
@@ -108,6 +223,10 @@ DID URL paths (`did:web:example.com/path`) are not supported and return `FEATURE
 
 The diff lists added, removed and rotated keys, changed relationships and services, controller and `alsoKnownAs` changes, and the domain binding before and after:
 
+```bash
+curl https://did.is/api/v1/diff/did:web:did.is
+```
+
 ```json
 {
   "did": "did:web:did.is",
@@ -120,6 +239,7 @@ The diff lists added, removed and rotated keys, changed relationships and servic
   "servicesRemoved": [],
   "servicesChanged": [],
   "controllerChanged": false,
+  "alsoKnownAsChanged": false,
   "domainBindingFrom": "VERIFIED",
   "domainBindingTo": "VERIFIED",
   "domainBindingChanged": false,
@@ -131,9 +251,15 @@ The diff lists added, removed and rotated keys, changed relationships and servic
 
 ## Control claims and directory
 
-- `GET /v1/claims/{did}`: current proofs that a controller demonstrated control of the DID. A claim is not legal identity.
+- `GET /v1/claims/{did}`: current proofs that a controller demonstrated control of the DID. Each claim states what it `proves` and what it `doesNotProve`. A claim is not legal identity.
 - `GET /v1/directory?q=&method=&limit=&cursor=`: DIDs whose controllers proved control and chose to be listed. `limit` is 1 to 50 (default 20); `q` is at most 100 characters.
+
+The SDKs have no method for these two endpoints; call them over HTTP.
 
 ```bash
 curl 'https://did.is/api/v1/directory?method=web&limit=5'
 ```
+
+## Try it in the browser
+
+Search any DID on [did.is](https://did.is) to see the same result as a page. [Reading a result](/app/reading-a-result/) explains each part, and [Live stream](/build/stream/) shows the resolution stages as they run.

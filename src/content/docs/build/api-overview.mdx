@@ -1,0 +1,116 @@
+---
+title: API overview
+description: Base URL, authentication, request budgets, identifier encoding and response conventions of the DID.is public API.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
+
+The DID.is public API answers questions about decentralized identifiers, credentials and AI agents over plain HTTPS and JSON. It is anonymous and free, and it has 20 operations, described in a machine-readable [OpenAPI document](https://did.is/api/openapi.json) and on the [API reference](/reference/api/) page.
+
+Every answer **reports evidence and states its limits**. The API does not give trust scores and does not decide for you. Your application applies its own rules to the result.
+
+<CaseDiagram
+  label="Your application calls the public API at did.is/api and receives JSON evidence or a problem object"
+  from={{ icon: 'team', title: 'Your application', sub: 'no API key' }}
+  sends="HTTPS to did.is/api"
+  checks={['Identifiers and DID URLs', 'Credentials and policies', 'Agents, tools and delegation', 'Request budget per client']}
+  returns="JSON"
+  to={{ icon: 'team', title: 'Your application' }}
+  result={{ tone: 'info', text: 'evidence + limitations' }}
+/>
+
+## What you get
+
+- **Anonymous access.** No API key and no account are needed.
+- **JSON results** with a plain-language headline and the checks behind it.
+- **Stable error codes** in RFC 9457 problem objects.
+
+## What it does not give you
+
+- **Private lookups.** Public resolutions may appear in the identifier's public observation history (not linked to who asked). For identifiers you must not disclose, use private resolution in the [console](/app/accounts/).
+- **Unlimited volume.** Each client has a request budget (see below). For higher volume, use a project API key from the [console](/app/accounts/).
+
+## Base URL
+
+```text
+https://did.is/api
+```
+
+All requests use HTTPS.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl https://did.is/api/v1/resolve/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient(); // https://did.is/api
+const r = await didis.resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK");
+console.log(r.verdict.headline);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+with DidisClient() as didis:  # https://did.is/api
+    r = didis.resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
+    print(r["verdict"]["headline"])
+```
+</TabItem>
+</Tabs>
+
+## Request budgets
+
+Each client has two budgets:
+
+| Budget | Limit | Endpoints |
+| --- | --- | --- |
+| Standard | 20 requests per minute | Resolution, dereferencing, history, diff, graph, fast verify, claims, directory, `verify-tool`, status |
+| Intensive | 2 requests per minute | `/v1/stream`, `/v1/credentials/verify`, `/v1/policies/evaluate`, `/v1/mcp/inspect`, `/v1/a2a/inspect`, `/v1/agents/verify-delegation`, `/v1/agents/authorize` |
+
+Resolving a `did:webvh` identifier also uses the intensive budget. `/health` is not budgeted.
+
+When a budget is used up, the API answers `429` with a `Retry-After` header. See [Errors and rate limits](/build/errors/).
+
+## Encoding identifiers
+
+Put the DID in the path as is. Percent-encoding is also accepted; the API decodes the path exactly once.
+
+- `#` must be encoded as `%23`, otherwise HTTP clients drop the fragment: `/v1/dereference/did:web:did.is%23key-1`.
+- The SDKs encode identifiers for you.
+
+## Reading the response
+
+| You receive | What it means | What to do |
+| --- | --- | --- |
+| `200` with `application/json` | A result. It can still say `INVALID`, `FAIL` or `DENY`. | Read the status fields of that endpoint. |
+| `application/did` or `application/did-resolution` | The W3C endpoint `/1.0/identifiers/{did}`. | Read it as a W3C DID resolution result. |
+| `text/event-stream` | The live stream `/v1/stream/{did}`. | See [Live stream](/build/stream/). |
+| `application/problem+json` | No result could be produced. | Use the `code`. See [Errors and rate limits](/build/errors/). |
+| `429` or `503` with `Retry-After` | Budget used up, or service busy. | Wait that many seconds. |
+
+Other conventions:
+
+- Responses carry `Cache-Control: no-store`.
+- Request bodies are limited to 512 KiB.
+- A request that takes longer than 45 seconds is ended with `408`.
+
+## Service status
+
+- `GET /health` reports the supported methods and standards.
+- `GET /v1/status` reports the status of each component. The same information is on [did.is/status](https://did.is/status).
+
+```bash
+curl https://did.is/api/v1/status
+```
+
+## Next steps
+
+- [SDKs](/build/sdks/) for TypeScript and Python.
+- [Resolution](/build/resolution/), [Credentials](/build/credentials/) and [Agent trust APIs](/build/agents/) for the main tasks.

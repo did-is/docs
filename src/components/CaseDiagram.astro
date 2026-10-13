@@ -17,8 +17,12 @@ interface Props {
   checks: string[];
   to: Party;
   result: { tone: Tone; text: string };
+  /** Heading of the middle box. Default: "DID.is checks". */
+  engine?: string;
+  /** Label of the second arrow. Default: "evidence". */
+  returns?: string;
 }
-const { label, from, sends, checks, to, result } = Astro.props;
+const { label, from, sends, checks, to, result, engine = 'DID.is checks', returns = 'evidence' } = Astro.props;
 
 const ICONS: Record<Icon, string> = {
   building:
@@ -55,14 +59,14 @@ const icon = (name: Icon) =>
     <div class="cd-engine">
       <span class="cd-engine-head">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>
-        DID.is checks
+        {engine}
       </span>
       <ul>
         {checks.map((c) => <li>{c}</li>)}
       </ul>
     </div>
     <div class="cd-arrow" aria-hidden="true">
-      <span class="cd-arrow-label">evidence</span>
+      <span class="cd-arrow-label">{returns}</span>
       <span class="cd-arrow-line"></span>
     </div>
     <div class="cd-party">

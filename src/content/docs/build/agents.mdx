@@ -4,62 +4,109 @@ description: Inspect MCP servers and A2A agent cards, verify delegation chains, 
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-These endpoints help an application or gateway decide whether to let an AI agent use a tool. All except `verify-tool` and `fast-verify` use the intensive budget (2 requests per minute).
+These endpoints help an application or gateway decide whether to let an AI agent use a tool. You can inspect what an MCP server or A2A agent publishes, verify a chain of signed delegations ("the bank allowed this agent to refund payments"), and ask whether that chain allows one specific tool call.
 
-| Endpoint | Question it answers |
+DID.is **checks signatures and records what servers publish**. It does not observe what an agent actually does. A valid chain proves who delegated what to whom; it does not prove the agent stays within that scope.
+
+<CaseDiagram
+  label="An agent sends a delegation chain and a tool name to your gateway, which asks DID.is whether the chain allows the tool"
+  from={{ icon: 'agent', title: 'AI agent', sub: 'delegation chain' }}
+  sends="chain + tool"
+  checks={['Each receipt signature and its issuer DID', 'Links: each step narrows the previous one', 'Dates and trusted root', 'The leaf capabilities grant this tool']}
+  to={{ icon: 'gateway', title: 'Your gateway' }}
+  result={{ tone: 'info', text: 'ALLOW / DENY + reason' }}
+/>
+
+## What is checked
+
+- **Delegation receipts.** Each [Delegation Receipt v1](/reference/delegation-receipts/) JWS has a valid structure and is signed by a key of its issuer DID. The chain runs root first, each link points to the previous one (hash linkage), each step grants only capabilities the previous one had (attenuation), there are no cycles, every receipt is within its validity window, and the chain is at most 8 long.
+- **Trusted root.** When you pass `trustedRoots`, the root of the chain must be one of them.
+- **Tool grant.** A capability grants a tool when it is `*`, the exact tool name, `ns:tool` or `ns:*`.
+- **MCP servers.** DID.is connects to the server, lists its tools and hashes each tool definition and schema, so you can see when they change.
+- **A2A agent cards.** The card is fetched from `/.well-known/agent-card.json`, validated against A2A 1.0, and any `signatures[]` are verified.
+
+## What is not checked
+
+- **Agent behaviour.** Nothing here observes or limits what the agent does after a call is allowed.
+- **Server identity.** MCP `serverInfo` is self-reported; MCP has no server identity attestation.
+- **Tool safety.** `heuristicClass` is a DID.is estimate from names, descriptions and schemas; `annotations` are the server's own claims.
+- **Standard status.** Delegation receipts are a DID.is experimental format, not a ratified standard.
+
+## Choose an endpoint
+
+| Endpoint | Question it answers | Budget |
+| --- | --- | --- |
+| `POST /v1/agents/authorize` | Does this chain allow this tool? (ALLOW / DENY) | Intensive |
+| `POST /v1/agents/verify-delegation` | Is this delegation chain valid, and what can the leaf do? | Intensive |
+| `GET /v1/agents/verify-tool?agent=&tool=&root=` | Does a registered chain allow this agent to use this tool? | Standard |
+| `GET /v1/mcp/inspect?endpoint=` | Which tools does this MCP server expose, and have they changed? | Intensive |
+| `GET /v1/a2a/inspect?url=` | Is this A2A agent card well formed, and who signed it? | Intensive |
+| `POST /v1/fast-verify/jws` | Was this JWS signed by a key of the DID in its `kid`? | Standard |
+
+The intensive budget is 2 requests per minute, the standard budget 20. See [Errors and rate limits](/build/errors/).
+
+## Authorise a tool call
+
+`POST /v1/agents/authorize` verifies the chain and checks one tool against the leaf's capabilities. It is stateless: nothing is stored.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -X POST https://did.is/api/v1/agents/authorize \
+  -H 'content-type: application/json' \
+  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments.refund","trustedRoots":["did:web:bank.example"]}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
+const { authorization } = await didis.authorize(chain, "payments.refund", {
+  trustedRoots: ["did:web:bank.example"],
+});
+if (authorization.decision !== "ALLOW") throw new Error(authorization.reason);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+with DidisClient() as didis:
+    res = didis.authorize(chain, "payments.refund", trusted_roots=["did:web:bank.example"])
+    if res["authorization"]["decision"] != "ALLOW":
+        raise PermissionError(res["authorization"]["reason"])
+```
+</TabItem>
+</Tabs>
+
+Replace the placeholders with real receipt JWS strings. The response has an `authorization` object (`agent`, `tool`, `decision`, `authorized`, `reason`, and when a capability matched, `matchedCapability`, `root` and `expires`) and the full `chain` result.
+
+## Reading the result
+
+| Result | What it means | What to do |
+| --- | --- | --- |
+| `ALLOW` | The chain is `VALID` and a leaf capability grants the tool. `reason` names it, for example `capability 'payments:*' grants 'refund'`. | Let the call through. |
+| `DENY`, scope violation | The chain is valid, but no capability grants this tool. | Refuse the call. |
+| `DENY`, chain not valid | The chain is `INVALID`, `INDETERMINATE` or `MALFORMED`; `reason` is the chain headline. | Refuse the call. |
+| `DENY`, nothing registered | `verify-tool` only: no `VALID` chain is registered for this agent. | Register a chain, or use `authorize`. |
+
+Chain `status` values from `verify-delegation`:
+
+| Chain `status` | What it means |
 | --- | --- |
-| `GET /v1/mcp/inspect?endpoint=` | Which tools does this MCP server expose, and have they changed? |
-| `GET /v1/a2a/inspect?url=` | Is this A2A agent card well formed, and who signed it? |
-| `POST /v1/agents/verify-delegation` | Is this delegation chain valid, and what can the leaf do? |
-| `POST /v1/agents/authorize` | Does this chain allow this tool? (ALLOW / DENY) |
-| `GET /v1/agents/verify-tool?agent=&tool=&root=` | Does a registered chain allow this agent to use this tool? |
-| `POST /v1/fast-verify/jws` | Was this JWS signed by a key of the DID in its `kid`? |
+| `VALID` | Every link verified; `effectiveCapabilities` and `notAfter` describe what the leaf may do and until when. |
+| `INVALID` | A link failed, or the root is not in `trustedRoots`. The chain grants nothing. |
+| `INDETERMINATE` | A link could not be fully verified, for example an issuer DID did not resolve. Treat it as unauthorised. |
+| `MALFORMED` | Not a usable chain, for example empty or longer than 8 receipts. |
 
-## Inspect an MCP server
-
-```bash
-curl 'https://did.is/api/v1/mcp/inspect?endpoint=https://mcp.deepwiki.com/mcp'
-```
-
-Abridged response:
-
-```json
-{
-  "endpoint": "https://mcp.deepwiki.com/mcp",
-  "status": "INSPECTED",
-  "mode": "SESSION",
-  "negotiatedVersion": "2025-11-25",
-  "serverInfo": { "name": "DeepWiki", "version": "2.14.3" },
-  "tools": [
-    {
-      "name": "ask_wiki_question",
-      "definitionSha256": "d9a292d4a04af2afd0545f2a723be7e0d73fe15287ce788870f1ccd71c36230b",
-      "schemaSha256": "fc67cfc7a6567b5e0626916674d71a6cea7adcd20e88636705dc5b577846f2e3",
-      "annotations": null,
-      "heuristicClass": "read_only",
-      "riskSignals": [],
-      "drift": "FIRST_OBSERVATION"
-    }
-  ]
-}
-```
-
-Store `definitionSha256` and `schemaSha256` for the tools you approve. If they change later, review the tool again. `heuristicClass` is a DID.is estimate; `annotations` are the server's own claims. A server that requires OAuth returns `AUTH_REQUIRED` and its tools are not listed.
-
-## Inspect an A2A agent card
-
-```bash
-curl 'https://did.is/api/v1/a2a/inspect?url=https://agent.example.com'
-```
-
-DID.is fetches `/.well-known/agent-card.json`, validates it against A2A 1.0 and verifies any `signatures[]`. The response has a `status` and a `checks[]` list (`fetch`, `schema`, `version`, `interfaces`, `origin`, `provider`, `security`, `signature`).
-
-If the URL has no agent card, the request fails with a problem instead of a result. For example, `url=https://did.is` currently returns `422 INVALID_DID_DOCUMENT` because `https://did.is/.well-known/agent-card.json` is not JSON. See [Errors and rate limits](/build/errors/).
+Treat any error response the same as `DENY`.
 
 ## Verify a delegation chain
 
-Send [Delegation Receipt v1](/reference/delegation-receipts/) JWS strings, root first.
+Send receipts root first.
 
 ```bash
 curl -X POST https://did.is/api/v1/agents/verify-delegation \
@@ -67,9 +114,9 @@ curl -X POST https://did.is/api/v1/agents/verify-delegation \
   -d '{"chain":["<root receipt>","<leaf receipt>"],"trustedRoots":["did:web:bank.example"],"register":false}'
 ```
 
-The response has `status` (`VALID`, `INVALID` or `MALFORMED`), `headline`, `checks[]`, `links[]`, `root`, `leaf`, `effectiveCapabilities`, `notAfter` and `limitations`. With `register: true`, a `VALID` chain is stored for `verify-tool`.
+The response has `registered` and a `result` with `status`, `headline`, `checks[]`, `links[]`, `root`, `leaf`, `effectiveCapabilities`, `notAfter`, `trustedRoot` and `limitations`. With `register: true`, a `VALID` chain is stored for `verify-tool`. SDK: `verifyDelegation(chain, { trustedRoots, register })` / `verify_delegation(chain, trusted_roots=…, register=…)`.
 
-An empty chain shows the shape of a failure:
+An empty chain shows the shape of a failure (live response):
 
 ```json
 {
@@ -95,37 +142,29 @@ An empty chain shows the shape of a failure:
 }
 ```
 
-## Authorise a tool call
-
-`POST /v1/agents/authorize` verifies the chain and checks one tool against the leaf's capabilities.
-
-<Tabs syncKey="lang">
-<TabItem label="TypeScript">
-```ts
-const { authorization } = await didis.authorize(chain, "payments.refund", {
-  trustedRoots: ["did:web:bank.example"],
-});
-if (authorization.decision !== "ALLOW") throw new Error(authorization.reason);
-```
-</TabItem>
-<TabItem label="Python">
-```python
-res = didis.authorize(chain, "payments.refund", trusted_roots=["did:web:bank.example"])
-if res["authorization"]["decision"] != "ALLOW":
-    raise PermissionError(res["authorization"]["reason"])
-```
-</TabItem>
-</Tabs>
-
-The `authorization` object has `agent`, `tool`, `decision` (`ALLOW` or `DENY`), `authorized` and `reason`. The response also contains the full `chain` result.
-
 ## Check a registered agent
 
 After registering a chain with `register: true`, ask about an agent without sending the chain again:
 
+<Tabs syncKey="lang">
+<TabItem label="curl">
 ```bash
 curl 'https://did.is/api/v1/agents/verify-tool?agent=did:web:agent.example&tool=transfer'
 ```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const auth = await didis.verifyTool("did:web:agent.example", "transfer");
+console.log(auth.decision, auth.reason);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+auth = didis.verify_tool("did:web:agent.example", "transfer")
+print(auth["decision"], auth["reason"])
+```
+</TabItem>
+</Tabs>
 
 ```json
 {
@@ -139,6 +178,84 @@ curl 'https://did.is/api/v1/agents/verify-tool?agent=did:web:agent.example&tool=
 
 Add `root=` to require a specific delegation root. Without a registered `VALID` chain the answer is always `DENY`.
 
+## Inspect an MCP server
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl 'https://did.is/api/v1/mcp/inspect?endpoint=https://mcp.deepwiki.com/mcp'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const mcp = await didis.inspectMcp("https://mcp.deepwiki.com/mcp");
+for (const t of mcp.tools) console.log(t.name, t.heuristicClass, t.drift);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+mcp = didis.inspect_mcp("https://mcp.deepwiki.com/mcp")
+for t in mcp["tools"]:
+    print(t["name"], t["heuristicClass"], t["drift"])
+```
+</TabItem>
+</Tabs>
+
+Abridged live response:
+
+```json
+{
+  "endpoint": "https://mcp.deepwiki.com/mcp",
+  "status": "INSPECTED",
+  "mode": "SESSION",
+  "negotiatedVersion": "2025-11-25",
+  "serverInfo": { "name": "DeepWiki", "version": "2.14.3" },
+  "headline": "DeepWiki — MCP 2025-11-25 (legacy session); 3 tools, 0 with risk signals; definitions unchanged.",
+  "tools": [
+    {
+      "name": "ask_wiki_question",
+      "definitionSha256": "d9a292d4a04af2afd0545f2a723be7e0d73fe15287ce788870f1ccd71c36230b",
+      "schemaSha256": "fc67cfc7a6567b5e0626916674d71a6cea7adcd20e88636705dc5b577846f2e3",
+      "annotations": null,
+      "heuristicClass": "read_only",
+      "riskSignals": [],
+      "drift": "UNCHANGED"
+    }
+  ],
+  "drift": { "status": "UNCHANGED", "added": [], "removed": [], "changed": [] }
+}
+```
+
+Store `definitionSha256` and `schemaSha256` for the tools you approve. If they change later, review the tool again. A tool's `drift` is `FIRST_OBSERVATION`, `UNCHANGED`, `CHANGED` or `ADDED`, measured against DID.is's previous observation of the same endpoint. A server that requires OAuth returns `AUTH_REQUIRED` and its tools are not listed.
+
+The response also has `checks[]` (`historyPersistence`, `transport`, `protocol`, `identity`, `inventory`, `drift`), `inventoryHash`, `classCounts`, `tls` and `limitations`.
+
+## Inspect an A2A agent card
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl 'https://did.is/api/v1/a2a/inspect?url=https://agent.example.com'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+const card = await didis.inspectA2a("https://agent.example.com");
+console.log(card.headline, card.signatures.map((s) => s.status));
+```
+</TabItem>
+<TabItem label="Python">
+```python
+card = didis.inspect_a2a("https://agent.example.com")
+print(card["headline"], [s["status"] for s in card["signatures"]])
+```
+</TabItem>
+</Tabs>
+
+DID.is fetches `/.well-known/agent-card.json` (with a fallback to the legacy `agent.json`), validates it against A2A 1.0 and verifies any `signatures[]` (JWS over the JCS-canonicalized card) with keys from a DID `kid` or an HTTPS `jku`. The response has `specVersion` (`1.0`, `0.3` or `unknown`), `headline`, `signatures[]` (each `VALID`, `INVALID`, `UNSUPPORTED` or `INDETERMINATE`) and a `checks[]` list (`fetch`, `schema`, `version`, `interfaces`, `origin`, `provider`, `security`, `signature`).
+
+If the URL has no agent card, the request fails with a problem instead of a result. For example, `url=https://did.is` currently returns `422 INVALID_DID_DOCUMENT` because `https://did.is/.well-known/agent-card.json` is not JSON. See [Errors and rate limits](/build/errors/).
+
 ## Verify a signed JWS
 
 `POST /v1/fast-verify/jws` takes a compact JWS whose `kid` is a DID URL, resolves the DID and verifies the signature.
@@ -146,6 +263,8 @@ Add `root=` to require a specific delegation root. Without a registered `VALID` 
 ```json
 { "jws": "<compact JWS>", "relationship": "authentication" }
 ```
+
+SDK: `fastVerifyJws(jws, relationship?)` / `fast_verify_jws(jws, relationship=None)`.
 
 Without `relationship`, `assertionMethod` and then `authentication` are tried. The response has `status` (`VALID`, `INVALID`, `UNSUPPORTED`, `INDETERMINATE` or `MALFORMED`), `valid`, `headline`, `alg`, `kid`, `typ`, `payload` and `signingInputSha256`, plus `signer` and `relationship` when a key was found. A `kid` that is not a DID URL returns `INDETERMINATE`.
 
@@ -174,3 +293,8 @@ export async function guardToolCall(chain: string[], tool: string): Promise<void
 ```
 
 `authorize` uses the intensive budget. For frequent checks, register the chain once with `verifyDelegation(chain, { register: true })` and call `verifyTool(agent, tool, root)`, which uses the standard budget.
+
+## Next steps
+
+- [Agents and tools](/app/agents/) shows the same inspections in the web app.
+- [Delegation receipts](/reference/delegation-receipts/) describes the receipt format.
