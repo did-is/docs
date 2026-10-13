@@ -121,6 +121,7 @@ export default defineConfig({
             { label: 'Resolution and dereferencing', slug: 'build/resolution' },
             { label: 'Live stream (SSE)', slug: 'build/stream' },
             { label: 'Credentials', slug: 'build/credentials' },
+            { label: 'EU wallet credentials', slug: 'build/eu-credentials' },
             { label: 'Policies', slug: 'build/policies' },
             { label: 'Agent trust APIs', slug: 'build/agents' },
             { label: 'Errors and rate limits', slug: 'build/errors' },

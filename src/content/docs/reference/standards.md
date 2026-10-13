@@ -29,6 +29,9 @@ Other DID methods return `501 METHOD_NOT_SUPPORTED`.
 | RDF-canonicalized suites (`eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `Ed25519Signature2020`, `JsonWebSignature2020`) | Reported as `UNSUPPORTED`. |
 | Selective disclosure (`ecdsa-sd-2023`, `bbs-2023`) | Reported as `UNSUPPORTED`. |
 | VC-JOSE (`vc+jwt`), VC-JWT 1.1 | Supported. |
+| SD-JWT VC (draft-ietf-oauth-sd-jwt-vc-19) over SD-JWT (RFC 9901) | Partial: `dc+sd-jwt`, SHA-256 disclosure digests, Key Binding JWT, issuer key via DID, `x5c` or issuer metadata. No EU trusted lists, no `vct` type metadata; legacy `vc+sd-jwt` is `UNSUPPORTED`. See [EU wallet credentials](/build/eu-credentials/). |
+| ISO/IEC 18013-5 mdoc | Recognised and reported as `UNSUPPORTED`. |
+| Token Status List (draft-ietf-oauth-status-list), JWT form | Partial: `statuslist+jwt` for SD-JWT VC, fail-closed. The CWT form is not implemented. |
 | JOSE algorithms | `EdDSA`, `ES256`, `ES256K`. `none`, `crit` and `b64: false` are refused. |
 | W3C Bitstring Status List v1.0 | Supported, single-bit entries. StatusList2021 entries are also read. See [Status lists](/reference/status-lists/). |
 | RFC 8785 JSON Canonicalization Scheme | Used for Data Integrity, `did:webvh` and fingerprints. See [JSON canonicalization](/reference/jcs/). |
