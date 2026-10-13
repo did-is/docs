@@ -23,7 +23,7 @@ DID.is **checks signatures and records what servers publish**. It does not obser
 
 - **Delegation receipts.** Each [Delegation Receipt v1](/reference/delegation-receipts/) JWS has a valid structure and is signed by a key of its issuer DID. The chain runs root first, each link points to the previous one (hash linkage), each step grants only capabilities the previous one had (attenuation), there are no cycles, every receipt is within its validity window, and the chain is at most 8 long.
 - **Trusted root.** When you pass `trustedRoots`, the root of the chain must be one of them.
-- **Tool grant.** A capability grants a tool when it is `*`, the exact tool name, `ns:tool` or `ns:*`.
+- **Tool grant.** A capability grants a tool when it is `*`, the exact tool name (`payments:transfer` grants only `payments:transfer`), or `ns:*` for a tool named `ns:…` (`payments:*` never grants `refund` or `slack:post`).
 - **MCP servers.** DID.is connects to the server, lists its tools and hashes each tool definition and schema, so you can see when they change.
 - **A2A agent cards.** The card is fetched from `/.well-known/agent-card.json`, validated against A2A 1.0, and any `signatures[]` are verified.
 
@@ -149,18 +149,18 @@ After registering a chain with `register: true`, ask about an agent without send
 <Tabs syncKey="lang">
 <TabItem label="curl">
 ```bash
-curl 'https://did.is/api/v1/agents/verify-tool?agent=did:web:agent.example&tool=transfer'
+curl 'https://did.is/api/v1/agents/verify-tool?agent=did:web:agent.example&tool=payments:transfer'
 ```
 </TabItem>
 <TabItem label="TypeScript">
 ```ts
-const auth = await didis.verifyTool("did:web:agent.example", "transfer");
+const auth = await didis.verifyTool("did:web:agent.example", "payments:transfer");
 console.log(auth.decision, auth.reason);
 ```
 </TabItem>
 <TabItem label="Python">
 ```python
-auth = didis.verify_tool("did:web:agent.example", "transfer")
+auth = didis.verify_tool("did:web:agent.example", "payments:transfer")
 print(auth["decision"], auth["reason"])
 ```
 </TabItem>
@@ -169,7 +169,7 @@ print(auth["decision"], auth["reason"])
 ```json
 {
   "agent": "did:web:agent.example",
-  "tool": "transfer",
+  "tool": "payments:transfer",
   "decision": "DENY",
   "authorized": false,
   "reason": "no verified delegation is registered for this agent"

@@ -826,7 +826,7 @@ let v: serde_json::Value = reqwest::Client::new()
 POST /v1/agents/authorize
 ```
 
-Stateless: verifies the chain and checks that its leaf capabilities grant the tool (exact, *, ns:tool, ns:*).
+Stateless: verifies the chain and checks that its leaf capabilities grant the tool (exact name, *, or ns:* for tools named ns:…).
 
 Budget: **intensive**.
 
@@ -844,7 +844,7 @@ Responses: `200`, `400`, `413`, `429`, `503`.
 ```bash
 curl -s -X POST "https://did.is/api/v1/agents/authorize" \
   -H 'Content-Type: application/json' \
-  -d '{"chain":[],"tool":"transfer"}'
+  -d '{"chain":[],"tool":"payments:transfer"}'
 ```
 </TabItem>
 <TabItem label="TypeScript">
@@ -854,7 +854,7 @@ import { DidisClient } from "@didis/client";
 const didis = new DidisClient(); // https://did.is/api
 // Receipts in compact JWS format, root first
 const chain: string[] = [];
-const { authorization } = await didis.authorize(chain, "transfer");
+const { authorization } = await didis.authorize(chain, "payments:transfer");
 console.log(authorization.decision, authorization.reason);
 ```
 </TabItem>
@@ -865,7 +865,7 @@ from didis import DidisClient
 client = DidisClient()  # https://did.is/api
 # Receipts in compact JWS format, root first
 chain: list[str] = []
-res = client.authorize(chain, "transfer")
+res = client.authorize(chain, "payments:transfer")
 print(res["authorization"]["decision"], res["authorization"]["reason"])
 ```
 </TabItem>
@@ -874,7 +874,7 @@ print(res["authorization"]["decision"], res["authorization"]["reason"])
 // Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
 let v: serde_json::Value = reqwest::Client::new()
     .post("https://did.is/api/v1/agents/authorize")
-    .json(&serde_json::json!({"chain":[],"tool":"transfer"}))
+    .json(&serde_json::json!({"chain":[],"tool":"payments:transfer"}))
     .send()
     .await?
     .error_for_status()?
@@ -905,7 +905,7 @@ Responses: `200`, `400`, `429`, `503`.
 <Tabs syncKey="lang">
 <TabItem label="curl">
 ```bash
-curl -s "https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=transfer"
+curl -s "https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=payments:transfer"
 ```
 </TabItem>
 <TabItem label="TypeScript">
@@ -913,7 +913,7 @@ curl -s "https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.exampl
 import { DidisClient } from "@didis/client";
 
 const didis = new DidisClient(); // https://did.is/api
-const t = await didis.verifyTool("did:web:agent.example", "transfer");
+const t = await didis.verifyTool("did:web:agent.example", "payments:transfer");
 if (!t.authorized) throw new Error(t.reason);
 ```
 </TabItem>
@@ -922,14 +922,14 @@ if (!t.authorized) throw new Error(t.reason);
 from didis import DidisClient
 
 client = DidisClient()  # https://did.is/api
-t = client.verify_tool("did:web:agent.example", "transfer")
+t = client.verify_tool("did:web:agent.example", "payments:transfer")
 assert t["authorized"], t["reason"]
 ```
 </TabItem>
 <TabItem label="Rust">
 ```rust
 // Cargo.toml: reqwest = { version = "0.12", features = ["json"] }, serde_json = "1"
-let v: serde_json::Value = reqwest::get("https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=transfer")
+let v: serde_json::Value = reqwest::get("https://did.is/api/v1/agents/verify-tool?agent=did%3Aweb%3Aagent.example&tool=payments:transfer")
     .await?
     .error_for_status()?
     .json()

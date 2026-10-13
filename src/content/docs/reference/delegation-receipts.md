@@ -46,10 +46,12 @@ A delegation receipt is a compact JWS in which one DID (the delegator) grants ca
 
 ## Capabilities
 
-- An exact tool name, matched case-insensitively: `payments.refund`.
-- A namespaced tool: `payments:read`.
-- A namespace wildcard: `payments:*`.
+- An exact tool name: `payments.refund` grants only `payments.refund`.
+- A namespaced tool: `payments:read` grants only `payments:read`, not a bare `read`.
+- A namespace wildcard: `payments:*` grants every tool named `payments:…`, and nothing outside that namespace.
 - Everything: `*`.
+
+Matching is case-insensitive. Malformed capabilities (empty segments, `*` inside a name, whitespace) grant nothing. A child may narrow `payments:*` to `payments:read` or `payments:card:*`, but not widen it to `*` or move it to another namespace.
 
 ## Chain rules
 
