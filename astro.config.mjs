@@ -124,6 +124,7 @@ export default defineConfig({
             { label: 'EU wallet credentials', slug: 'build/eu-credentials' },
             { label: 'Policies', slug: 'build/policies' },
             { label: 'Agent trust APIs', slug: 'build/agents' },
+            { label: 'Guard agent tools', slug: 'build/guard-tools' },
             { label: 'Errors and rate limits', slug: 'build/errors' },
             { label: 'Webhook signatures', slug: 'build/webhooks' },
           ],

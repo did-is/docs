@@ -1,0 +1,110 @@
+---
+title: Guard agent tools
+description: Wrap agent tool handlers so they run only when the tool definition is unchanged and the agent's delegation grants the tool. Fail-closed, in TypeScript and Python.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+An agent tool is dangerous in two ways: the tool can change after you approved it (an MCP server silently rewrites a description or schema), and the agent can call a tool nobody delegated to it. The SDK guard checks both **before** your handler runs. If either check fails, or DID.is cannot answer, the handler does not run.
+
+## What is checked
+
+- **Definition pin (local).** The tool definition the agent actually received hashes to the SHA-256 you approved. The hash is RFC 8785 (JCS) + SHA-256, the same `definitionSha256` DID.is reports for MCP tools. No network call.
+- **Delegation (DID.is).** `verify-tool` confirms the configured agent DID has a registered, `VALID` [delegation chain](/reference/delegation-receipts/) whose capabilities grant the tool, and, if you set `root`, that the chain starts at that root.
+
+## What is not checked
+
+- **Who is calling.** The guard trusts the agent DID from your configuration. Never take it from model output or request input.
+- **Arguments.** The guard decides whether a tool may run, not what it is called with. Validate arguments in your handler.
+- **Unpinned tools.** A tool without a pin skips the definition check. Set `requirePins` / `require_pins` to refuse them.
+
+## Capabilities and tool names
+
+Name tools the way your capabilities name them. `weather:*` grants `weather:forecast` and `weather:alerts:list`, but not `forecast`, `payments:refund` or `weatherx:forecast`. `payments:refund` grants only `payments:refund`. See [Agent trust APIs](/build/agents/).
+
+## Setup
+
+1. Review the MCP server's `tools/list` and store pins: `pinToolDefinitions(tools)` / `pin_tool_definitions(tools)` returns `{ toolName: sha256 }`.
+2. Register the agent's delegation chain once: `verifyDelegation(chain, { trustedRoots: [root], register: true })`.
+3. Wrap each tool handler with the guard.
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+import { DidisClient, createDidisGuard, DidisGuardError } from "@didis/client";
+
+const guard = createDidisGuard({
+  client: new DidisClient(),
+  agent: process.env.AGENT_DID!,
+  root: process.env.ROOT_DID,
+  pins,               // from step 1
+  requirePins: true,
+});
+
+const forecast = guard.wrap(
+  { tool: "weather:forecast", definition: () => currentTools.get("weather:forecast") },
+  async (city: string) => weatherApi.forecast(city),
+);
+
+try {
+  await forecast("Reykjavik");
+} catch (e) {
+  if (e instanceof DidisGuardError) console.warn(e.code, e.tool); // the tool did not run
+  else throw e;
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import os
+from didis import DidisClient, DidisGuard, DidisGuardError
+
+guard = DidisGuard(
+    DidisClient(),
+    agent=os.environ["AGENT_DID"],
+    root=os.environ["ROOT_DID"],
+    pins=pins,           # from step 1
+    require_pins=True,
+)
+
+@guard.tool("weather:forecast", definition=lambda: current_tools["weather:forecast"])
+def forecast(city: str) -> str:
+    return weather_api.forecast(city)
+
+try:
+    forecast("Reykjavik")
+except DidisGuardError as e:
+    print(e.code, e.tool)  # the tool did not run
+```
+Use `AsyncDidisGuard` with `AsyncDidisClient` for `async def` tools.
+</TabItem>
+</Tabs>
+
+For a single tool there is a one-line form: `withDidisGuard(handler, { client, agent, root, tool, pin, definition })` in TypeScript and `@didis_guard(client, agent, tool, root, pin=..., definition=...)` in Python. For several tools, create one guard so they share its cache.
+
+## Errors
+
+| Code | Meaning |
+| --- | --- |
+| `TOOL_DRIFT` | The definition no longer matches its pin, or its name differs. |
+| `TOOL_DEFINITION_MISSING` | The tool is pinned but no definition was supplied, or `requirePins` is on and the tool has no pin. |
+| `TOOL_NOT_AUTHORIZED` | DID.is answered `DENY`, or the chain's root is not the configured root. |
+| `GUARD_UNAVAILABLE` | DID.is could not be reached, returned an error (including `429`), or gave an unexpected answer. |
+| `GUARD_MISCONFIGURED` | Invalid agent or root DID, pin, cache setting or tool name. |
+
+## Caching and limits
+
+- An `ALLOW` is reused for 30 seconds by default (`allowCacheMs` / `allow_cache_seconds`, `0` disables), never past the delegation's expiry. `DENY` and errors are never cached. Call `clearCache()` / `clear_cache()` after revoking a delegation.
+- `verify-tool` uses the standard rate-limit budget. A `429` fails closed, so size the cache to your call rate. See [Errors and rate limits](/build/errors/).
+- `onDecision` / `on_decision` receives every decision for audit logs. An exception in the hook does not change the decision.
+
+## Optional: compare with DID.is
+
+`attestMcpPins(client, endpoint, pins)` / `attest_mcp_pins(...)` asks DID.is to inspect a public MCP server and compares the observed `definitionSha256` values with your pins. It returns `ok: false` when any pin differs or the server could not be inspected (for example `AUTH_REQUIRED`).
+
+Run it at startup or deploy time, not before every call. It is an outbound, rate-limited request. DID.is cannot reach servers that need a login or run on a private network. The local pin check is the one that protects each call.
+
+## Next steps
+
+- [Agent trust APIs](/build/agents/) covers delegation verification and capabilities.
+- [Delegation receipts](/reference/delegation-receipts/) describes the receipt format.

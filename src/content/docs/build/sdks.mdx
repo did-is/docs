@@ -25,7 +25,7 @@ The SDKs **add no checks of their own**. Every result comes from the API and mea
 
 | | TypeScript | Python |
 | --- | --- | --- |
-| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.1.0 | [`didis-py`](https://pypi.org/project/didis-py/) 0.1.0 (import `didis`) |
+| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.2.0 | [`didis-py`](https://pypi.org/project/didis-py/) 0.2.0 (import `didis`) |
 | Source | [did-is/didis-js](https://github.com/did-is/didis-js) | [did-is/didis-py](https://github.com/did-is/didis-py) |
 | Runtime | Any runtime with `fetch`: Node 18+, Deno, Bun, browsers, edge. Zero dependencies, ESM. | Python 3.11+, `httpx`. Sync `DidisClient` and async `AsyncDidisClient`. |
 | Responses | Typed objects | Plain `dict`s typed with `TypedDict` (`didis.types`) |
@@ -35,8 +35,7 @@ The SDKs **add no checks of their own**. Every result comes from the API and mea
 
 - **Retries.** A `429` or `503` raises `DidisError`; you decide when to retry (see [Errors and rate limits](/build/errors/#retrying-in-the-sdks)).
 - **Directory and claims.** These endpoints have no SDK method; call them over HTTP (see the [API reference](/reference/api/#directory-and-claims)).
-- **Newer request options.** Options such as `expectedNonce` and `trustedIssuerCertificates` for [EU wallet credentials](/build/eu-credentials/) are not in 0.1.0; call the API directly for those.
-- **Middleware.** There is no ready-made agent or gateway middleware; see the [tool-call guard pattern](/build/agents/#example-a-tool-call-guard).
+- **Gateway middleware.** There is no ready-made proxy or framework plugin. To guard individual tool handlers, use the SDK guard ([Guard agent tools](/build/guard-tools/)).
 
 ## Install
 

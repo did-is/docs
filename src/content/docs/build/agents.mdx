@@ -279,7 +279,7 @@ Without `relationship`, `assertionMethod` and then `authentication` are tried. T
 
 ## Example: a tool-call guard
 
-The SDKs have no middleware. This is a pattern you can write yourself: deny by default, and allow a call only when DID.is says `ALLOW`.
+The SDKs include a ready-made guard that also pins tool definitions: see [Guard agent tools](/build/guard-tools/). The pattern below shows the same idea written by hand: deny by default, and allow a call only when DID.is says `ALLOW`.
 
 ```ts
 import { DidisClient, DidisError } from "@didis/client";
@@ -305,5 +305,6 @@ export async function guardToolCall(chain: string[], tool: string): Promise<void
 
 ## Next steps
 
+- [Guard agent tools](/build/guard-tools/) wraps tool handlers with the SDK guard.
 - [Agents and tools](/app/agents/) shows the same inspections in the web app.
 - [Delegation receipts](/reference/delegation-receipts/) describes the receipt format.
