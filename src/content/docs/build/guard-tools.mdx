@@ -20,7 +20,18 @@ An agent tool is dangerous in two ways: the tool can change after you approved i
 
 ## Capabilities and tool names
 
-Name tools the way your capabilities name them. `weather:*` grants `weather:forecast` and `weather:alerts:list`, but not `forecast`, `payments:refund` or `weatherx:forecast`. `payments:refund` grants only `payments:refund`. See [Agent trust APIs](/build/agents/).
+A **capability** is what a delegation grants, written with `:` namespaces: `weather:*` grants `weather:forecast` and `weather:alerts:list`, but not `forecast`, `payments:refund` or `weatherx:forecast`. `payments:refund` grants only `payments:refund`. See [Agent trust APIs](/build/agents/).
+
+A **tool name** is what the model and the MCP server see. MCP, OpenAI and most agent frameworks allow only letters, digits, `_`, `-` and `.` in tool names, so a tool cannot be called `weather:forecast`. Give the guard both names:
+
+| You pass | Used for | Example |
+| --- | --- | --- |
+| `tool` | The pin (`tools/list` name) and error messages | `weather_forecast` |
+| `capability` | The question sent to DID.is `verify-tool` | `weather:forecast` |
+
+If you leave out `capability`, the tool name is used as the capability (useful when your tools are not exposed through MCP). A capability must be exact: no `*`, no empty segments, no spaces. Wildcards belong in delegations, not in tool calls. Requires SDK 0.2.1 or later.
+
+Keep the name-to-capability table in your code or configuration, next to the pins. A tool missing from the table should be refused, as in the examples below.
 
 ## Setup
 
@@ -42,14 +53,18 @@ const guard = createDidisGuard({
 });
 
 const forecast = guard.wrap(
-  { tool: "weather:forecast", definition: () => currentTools.get("weather:forecast") },
+  {
+    tool: "weather_forecast",            // name in tools/list (pin key)
+    capability: "weather:forecast",      // what the delegation must grant
+    definition: () => currentTools.get("weather_forecast"),
+  },
   async (city: string) => weatherApi.forecast(city),
 );
 
 try {
   await forecast("Reykjavik");
 } catch (e) {
-  if (e instanceof DidisGuardError) console.warn(e.code, e.tool); // the tool did not run
+  if (e instanceof DidisGuardError) console.warn(e.code, e.tool, e.detail?.capability); // the tool did not run
   else throw e;
 }
 ```
@@ -67,20 +82,129 @@ guard = DidisGuard(
     require_pins=True,
 )
 
-@guard.tool("weather:forecast", definition=lambda: current_tools["weather:forecast"])
+@guard.tool(
+    "weather_forecast",                  # name in tools/list (pin key)
+    definition=lambda: current_tools["weather_forecast"],
+    capability="weather:forecast",       # what the delegation must grant
+)
 def forecast(city: str) -> str:
     return weather_api.forecast(city)
 
 try:
     forecast("Reykjavik")
 except DidisGuardError as e:
-    print(e.code, e.tool)  # the tool did not run
+    print(e.code, e.tool, e.detail["capability"])  # the tool did not run
 ```
 Use `AsyncDidisGuard` with `AsyncDidisClient` for `async def` tools.
 </TabItem>
 </Tabs>
 
-For a single tool there is a one-line form: `withDidisGuard(handler, { client, agent, root, tool, pin, definition })` in TypeScript and `@didis_guard(client, agent, tool, root, pin=..., definition=...)` in Python. For several tools, create one guard so they share its cache.
+For a single tool there is a one-line form: `withDidisGuard(handler, { client, agent, root, tool, capability, pin, definition })` in TypeScript and `@didis_guard(client, agent, tool, root, capability=..., pin=..., definition=...)` in Python. For several tools, create one guard so they share its cache.
+
+## Use with MCP and agent frameworks
+
+The guard does not depend on any framework. Put `guard.check(...)` in the one place where your code runs a tool, before the tool runs. Each pattern below has a complete, runnable example in the SDK repositories. The examples need no account, no LLM and no API key; they call the public API with throwaway demo keys.
+
+| Framework | Where the check goes | TypeScript | Python |
+| --- | --- | --- | --- |
+| MCP client (official SDKs) | Your `callTool` / `call_tool` function, before `client.callTool` | [`mcp-client.mjs`](https://github.com/did-is/didis-js/blob/main/examples/mcp-client.mjs) | [`mcp_client.py`](https://github.com/did-is/didis-py/blob/main/examples/mcp_client.py) |
+| LangChain | Inside the tool function, before the real work | [`langchain-tool.mjs`](https://github.com/did-is/didis-js/blob/main/examples/langchain-tool.mjs) | [`langchain_tool.py`](https://github.com/did-is/didis-py/blob/main/examples/langchain_tool.py) |
+| OpenAI Agents SDK | Inside `execute` / a decorator under `@function_tool` | [`openai-agents-tool.mjs`](https://github.com/did-is/didis-js/blob/main/examples/openai-agents-tool.mjs) | [`openai_agents_tool.py`](https://github.com/did-is/didis-py/blob/main/examples/openai_agents_tool.py) |
+
+### MCP client
+
+Your agent calls a third-party MCP server. Pin its `tools/list` once after review, then route every call through one function. The definition passed to the guard is the one the server serves **now**, so a server that changes a description after approval is caught (`TOOL_DRIFT`) before the call is sent.
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+// MCP tool name -> DID.is capability. Tools not listed are refused.
+const CAPABILITIES = { weather_forecast: "weather:forecast", payments_refund: "payments:refund" };
+
+async function callTool(name: string, args: Record<string, unknown>) {
+  const capability = CAPABILITIES[name];
+  if (!capability) throw new DidisGuardError("TOOL_NOT_AUTHORIZED", name, `no capability mapping for '${name}'`);
+  await guard.check({
+    tool: name,
+    capability,
+    definition: async () => (await mcp.listTools()).tools.find((t) => t.name === name),
+  });
+  return mcp.callTool({ name, arguments: args });
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+# MCP tool name -> DID.is capability. Tools not listed are refused.
+CAPABILITIES = {"weather_forecast": "weather:forecast", "payments_refund": "payments:refund"}
+
+async def call_tool(name: str, args: dict):
+    capability = CAPABILITIES.get(name)
+    if capability is None:
+        raise DidisGuardError("TOOL_NOT_AUTHORIZED", name, f"no capability mapping for '{name}'")
+
+    async def current_definition():
+        tools = (await mcp.list_tools(cache_mode="refresh")).tools
+        return next((t.model_dump(by_alias=True, exclude_none=True, mode="json") for t in tools if t.name == name), None)
+
+    await guard.check(name, current_definition, capability=capability)  # AsyncDidisGuard
+    return await mcp.call_tool(name, args)
+```
+The Python example uses `mcp` 2.x (`from mcp import Client`). Pins must be computed from the same plain-JSON form (`model_dump(by_alias=True, exclude_none=True, mode="json")`).
+</TabItem>
+</Tabs>
+
+Fetching `tools/list` before every call costs one round trip to the MCP server. If that is too slow, cache the list and refresh it when the server sends `notifications/tools/list_changed`; the pin check is local and costs nothing.
+
+### LangChain and OpenAI Agents SDK
+
+These tools run your own code, so there is usually no remote definition to pin. Check the capability inside the tool. When the guard blocks, return a short refusal to the model instead of raising, so it tells the user rather than retrying.
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+import { tool } from "@langchain/core/tools";        // or: import { tool } from "@openai/agents";
+import { z } from "zod";
+
+const forecast = tool(async ({ city }) => {
+  try {
+    await guard.check({ tool: "weather_forecast", capability: "weather:forecast" });
+  } catch (e) {
+    if (e instanceof DidisGuardError) return `Blocked by policy (${e.code}). Do not retry this tool.`;
+    throw e;
+  }
+  return weatherApi.forecast(city);
+}, { name: "weather_forecast", description: "Forecast for a city.", schema: z.object({ city: z.string() }) });
+// OpenAI Agents SDK: tool({ name, description, parameters, execute }) with the same body.
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from agents import function_tool   # OpenAI Agents SDK
+
+def guarded(guard, *, capability):
+    def decorate(fn):
+        @functools.wraps(fn)        # keeps the signature, so the model sees the real parameters
+        async def run(*args, **kwargs):
+            try:
+                await guard.check(fn.__name__, capability=capability)
+            except DidisGuardError as e:
+                return f"Blocked by policy ({e.code}). Do not retry this tool."
+            return await fn(*args, **kwargs)
+        return run
+    return decorate
+
+@function_tool
+@guarded(guard, capability="weather:forecast")
+async def weather_forecast(city: str) -> str:
+    """Forecast for a city."""
+    return await weather_api.forecast(city)
+```
+For LangChain, see [`langchain_tool.py`](https://github.com/did-is/didis-py/blob/main/examples/langchain_tool.py): the same check inside a `StructuredTool`.
+</TabItem>
+</Tabs>
+
+Returning a refusal is a choice for the model's benefit; the tool body still does not run. If you prefer the run to stop, raise instead (LangChain) or let the error reach the SDK's error handling (OpenAI Agents SDK).
 
 ## Errors
 
@@ -90,13 +214,14 @@ For a single tool there is a one-line form: `withDidisGuard(handler, { client, a
 | `TOOL_DEFINITION_MISSING` | The tool is pinned but no definition was supplied, or `requirePins` is on and the tool has no pin. |
 | `TOOL_NOT_AUTHORIZED` | DID.is answered `DENY`, or the chain's root is not the configured root. |
 | `GUARD_UNAVAILABLE` | DID.is could not be reached, returned an error (including `429`), or gave an unexpected answer. |
-| `GUARD_MISCONFIGURED` | Invalid agent or root DID, pin, cache setting or tool name. |
+| `GUARD_MISCONFIGURED` | Invalid agent or root DID, pin, cache setting, tool name or capability (for example one containing `*`). |
 
 ## Caching and limits
 
 - An `ALLOW` is reused for 30 seconds by default (`allowCacheMs` / `allow_cache_seconds`, `0` disables), never past the delegation's expiry. `DENY` and errors are never cached. Call `clearCache()` / `clear_cache()` after revoking a delegation.
 - `verify-tool` uses the standard rate-limit budget. A `429` fails closed, so size the cache to your call rate. See [Errors and rate limits](/build/errors/).
-- `onDecision` / `on_decision` receives every decision for audit logs. An exception in the hook does not change the decision.
+- The `ALLOW` cache is keyed by capability, so two tool names mapped to the same capability share one answer.
+- `onDecision` / `on_decision` receives every decision for audit logs, with both `tool` and `capability`. An exception in the hook does not change the decision.
 
 ## Optional: compare with DID.is
 

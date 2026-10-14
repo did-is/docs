@@ -48,7 +48,7 @@ const leakTerms = [
   /\b(?:USER_GUIDE|STANDARDS_REFERENCE|DEVELOPER_GUIDE|API_CONTRACT)\b/, /\bDIDIS_[A-Z]/, /\bpilot\b/i,
   /operator runbook/i, /\bdaemon\b/i, /\/v1\/(?:session|control|monitoring|customer)\//,
   /adminToken|admin[_ ]token/i, /self-host/i, /next\.js/i, /\bsqlite\b/i, /VACUUM INTO/,
-  /resolver-core/, /\bwritten in Rust\b|\bRust (?:server|backend|core|crate|workspace)\b/i, /verifyWebhookSignature/, /withDidisGuard|didis_guard/,
+  /resolver-core/, /\bwritten in Rust\b|\bRust (?:server|backend|core|crate|workspace)\b/i, /verifyWebhookSignature/,
   /github\.com\/did-is\/did\//, /github\.com\/did-is\/blob\//,
 ];
 // ---- 4. wording denylist ---------------------------------------------------------------------
