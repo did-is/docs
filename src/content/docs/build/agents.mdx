@@ -45,7 +45,7 @@ DID.is **checks signatures and records what servers publish**. It does not obser
 | `GET /v1/a2a/inspect?url=` | Is this A2A agent card well formed, and who signed it? | Intensive |
 | `POST /v1/fast-verify/jws` | Was this JWS signed by a key of the DID in its `kid`? | Standard |
 
-The intensive budget is 2 requests per minute, the standard budget 20. See [Errors and rate limits](/build/errors/).
+The intensive budget is 10 requests per minute, the standard budget 20. See [Errors and rate limits](/build/errors/).
 
 ## Authorise a tool call
 

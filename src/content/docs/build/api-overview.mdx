@@ -72,7 +72,7 @@ Each client has two budgets:
 | Budget | Limit | Endpoints |
 | --- | --- | --- |
 | Standard | 20 requests per minute | Resolution, dereferencing, history, diff, graph, fast verify, claims, directory, `verify-tool`, status |
-| Intensive | 2 requests per minute | `/v1/stream`, `/v1/credentials/verify`, `/v1/policies/evaluate`, `/v1/mcp/inspect`, `/v1/a2a/inspect`, `/v1/agents/verify-delegation`, `/v1/agents/authorize` |
+| Intensive | 10 requests per minute | `/v1/stream`, `/v1/credentials/verify`, `/v1/policies/evaluate`, `/v1/mcp/inspect`, `/v1/a2a/inspect`, `/v1/agents/verify-delegation`, `/v1/agents/authorize` |
 
 Resolving a `did:webvh` identifier also uses the intensive budget. `/health` is not budgeted.
 

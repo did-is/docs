@@ -7,7 +7,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 Base URL `https://did.is/api`. No authentication. This page is generated from the [OpenAPI document](https://did.is/api/openapi.json); use that file for code generation.
 
-Budgets: *standard* 20 requests per minute, *intensive* 2 requests per minute, per client. Every error is an RFC 9457 problem; see [Errors and rate limits](/build/errors/).
+Budgets: *standard* 20 requests per minute, *intensive* 10 requests per minute, per client. Every error is an RFC 9457 problem; see [Errors and rate limits](/build/errors/).
 
 Every budgeted operation can answer `429 RATE_LIMITED` and `503 CAPACITY_EXHAUSTED`. Both carry a `Retry-After` header with the number of seconds to wait; read it on each response instead of using a fixed delay. Request bodies are limited to 512 KiB (`413 PAYLOAD_TOO_LARGE`).
 

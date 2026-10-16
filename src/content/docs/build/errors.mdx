@@ -112,7 +112,7 @@ A request that runs longer than 45 seconds is ended with `408`.
 
 ## Rate limits
 
-Each client has a standard budget (20 requests per minute) and an intensive budget (2 requests per minute). The [API overview](/build/api-overview/#request-budgets) lists which endpoints use which.
+Each client has a standard budget (20 requests per minute) and an intensive budget (10 requests per minute). The [API overview](/build/api-overview/#request-budgets) lists which endpoints use which.
 
 Budgets refill continuously. When one is empty, the API answers:
 
