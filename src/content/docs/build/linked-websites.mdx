@@ -1,0 +1,238 @@
+---
+title: Link your websites to your DID
+description: Show that your DID and your other websites are run by the same party, check it on did.is, require it in a policy and get told if a link breaks.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CaseDiagram from '../../../components/CaseDiagram.astro';
+
+Your DID can name other websites you run, for example your shop, your documentation or a brand site. A claim made by the DID alone proves nothing, because anyone can write any address into their own document. DID.is counts a website as linked only when **both sides say so**:
+
+1. The DID lists the website in `alsoKnownAs`.
+2. The website publishes a DID Configuration file that names the DID, signed with one of the DID's own keys.
+
+When both are true, the website is shown as `CONFIRMED`. This page walks through the setup, using the link between `did:web:did.is` and `https://docs.did.is` as a working example.
+
+<CaseDiagram
+  label="A linked website: the DID names the website, and the website links back with a credential signed by the DID's key"
+  from={{ icon: 'globe', title: 'Your website', sub: 'https://shop.example' }}
+  sends="did-configuration.json"
+  checks={['The DID lists the website in alsoKnownAs', 'The website names the DID', "Signed with the DID's own key", 'Not expired, exact origin']}
+  to={{ icon: 'team', title: 'Anyone who checks' }}
+  result={{ tone: 'ok', text: 'CONFIRMED' }}
+/>
+
+<div class="proof-pair not-content">
+  <div class="pp-yes"><h4>What a confirmation shows</h4><ul><li>Whoever controls the DID's signing key also controls what the website serves at <code>/.well-known/did-configuration.json</code>.</li><li>The link was checked in both directions at the time shown.</li></ul></div>
+  <div class="pp-no"><h4>What it does not show</h4><ul><li>Who that party is. A confirmation links a DID and a website; it does not identify a company or person.</li><li>Anything about a specific page or profile path. Only the website origin (scheme, host and port) is confirmed.</li></ul></div>
+</div>
+
+## Before you start
+
+- A DID you control with a key listed under `assertionMethod`. The example uses `did:web:did.is` and its key `did:web:did.is#key-1` (Ed25519).
+- The ability to publish a file at `https://<your-website>/.well-known/did-configuration.json`.
+- The website must use `https://`. Plain `http://` addresses cannot be confirmed.
+
+## Step 1: name the website in your DID
+
+Add the website to `alsoKnownAs` in your DID document. A bare origin is clearest; a path such as `https://shop.example/about` is accepted, but only its origin (`https://shop.example`) is checked.
+
+```json
+{
+  "id": "did:web:did.is",
+  "alsoKnownAs": ["https://docs.did.is/"],
+  "verificationMethod": [{ "id": "did:web:did.is#key-1", "…": "…" }],
+  "assertionMethod": ["did:web:did.is#key-1"]
+}
+```
+
+## Step 2: publish a DID Configuration on the website
+
+The file follows the [DIF Well Known DID Configuration](https://identity.foundation/.well-known/resources/did-configuration/) specification. It holds a Domain Linkage Credential: a JWT signed with your DID's key that says "this DID is linked to this origin".
+
+The credential must have:
+
+| Field | Value |
+| --- | --- |
+| header `kid` | A key in your DID's `assertionMethod`, e.g. `did:web:did.is#key-1` |
+| `iss`, `sub`, `vc.issuer`, `vc.credentialSubject.id` | Your DID, all four the same |
+| `vc.credentialSubject.origin` | The website origin exactly, e.g. `https://docs.did.is` |
+| `vc.type` | `["VerifiableCredential", "DomainLinkageCredential"]` |
+| `nbf` / `exp` and `issuanceDate` / `expirationDate` | Valid now. Pick an expiry you will remember to renew. |
+
+Sign it on a machine that holds the key, never in the browser and never on the website itself:
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+import { SignJWT, importJWK } from "jose";
+import { readFileSync, writeFileSync } from "node:fs";
+
+const did = "did:web:did.is";
+const origin = "https://docs.did.is";
+const privateJwk = JSON.parse(readFileSync("private.jwk", "utf8")); // keep this file private
+
+const now = new Date();
+const until = new Date(Date.now() + 365 * 24 * 3600 * 1000);
+const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
+
+const jwt = await new SignJWT({
+  vc: {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1",
+      "https://identity.foundation/.well-known/did-configuration/v1",
+    ],
+    type: ["VerifiableCredential", "DomainLinkageCredential"],
+    issuer: did,
+    issuanceDate: iso(now),
+    expirationDate: iso(until),
+    credentialSubject: { id: did, origin },
+  },
+})
+  .setProtectedHeader({ alg: "EdDSA", typ: "JWT", kid: `${did}#key-1` })
+  .setIssuer(did)
+  .setSubject(did)
+  .setNotBefore(Math.floor(now.getTime() / 1000))
+  .setExpirationTime(Math.floor(until.getTime() / 1000))
+  .sign(await importJWK(privateJwk, "EdDSA"));
+
+writeFileSync(
+  "did-configuration.json",
+  JSON.stringify(
+    { "@context": "https://identity.foundation/.well-known/did-configuration/v1", linked_dids: [jwt] },
+    null,
+    2,
+  ),
+);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import json, time
+import jwt  # pip install "pyjwt[crypto]"
+from jwt.algorithms import OKPAlgorithm
+
+did, origin = "did:web:did.is", "https://docs.did.is"
+key = OKPAlgorithm.from_jwk(open("private.jwk").read())  # keep this file private
+
+now = int(time.time())
+until = now + 365 * 24 * 3600
+iso = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+
+token = jwt.encode(
+    {
+        "iss": did, "sub": did, "nbf": now, "exp": until,
+        "vc": {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://identity.foundation/.well-known/did-configuration/v1",
+            ],
+            "type": ["VerifiableCredential", "DomainLinkageCredential"],
+            "issuer": did,
+            "issuanceDate": iso(now),
+            "expirationDate": iso(until),
+            "credentialSubject": {"id": did, "origin": origin},
+        },
+    },
+    key,
+    algorithm="EdDSA",
+    headers={"kid": f"{did}#key-1", "typ": "JWT"},
+)
+
+with open("did-configuration.json", "w") as f:
+    json.dump(
+        {"@context": "https://identity.foundation/.well-known/did-configuration/v1",
+         "linked_dids": [token]},
+        f, indent=2,
+    )
+```
+</TabItem>
+</Tabs>
+
+Upload `did-configuration.json` so that it is served at `https://<your-website>/.well-known/did-configuration.json` with status 200. You can see the live example at [docs.did.is/.well-known/did-configuration.json](https://docs.did.is/.well-known/did-configuration.json).
+
+One website can link several DIDs: add one credential per DID to `linked_dids`.
+
+## Step 3: check it
+
+Open your DID on did.is, for example [did.is/did:web:did.is](https://did.is/did:web:did.is). The **Linked accounts** section lists each `alsoKnownAs` entry and its status. Or use the API:
+
+```bash
+curl -s https://did.is/api/v1/resolve/did:web:did.is
+```
+
+```json
+{
+  "evidence": {
+    "linkedAccounts": [
+      {
+        "value": "https://docs.did.is/",
+        "kind": "WEB_ORIGIN",
+        "origin": "https://docs.did.is",
+        "status": "CONFIRMED",
+        "configurationStatus": "VERIFIED",
+        "detail": "https://docs.did.is publishes a DID Configuration signed by this DID's key."
+      }
+    ]
+  }
+}
+```
+
+| `status` | Meaning | What to fix |
+| --- | --- | --- |
+| `CONFIRMED` | Both directions check out. | Nothing. |
+| `NOT_CONFIRMED` | The website does not link back: no file, or the file names other DIDs only. | Publish the file from step 2. |
+| `FAILED` | The file names this DID, but the credential does not verify: wrong key, wrong origin, expired, or a bad signature. | Read `detail`, then re-sign. |
+| `UNSUPPORTED` | The credential uses a proof format DID.is does not verify. | Use the JWT format shown above. |
+| `UNREACHABLE` | The website could not be fetched. | Check that the file is public over `https://`. |
+| `NOT_CHECKABLE` | Not a web address (another DID, `acct:`…), plain `http://`, or over the limit. | Only `https://` websites can be confirmed. |
+
+DID.is reports up to 8 `alsoKnownAs` entries and checks up to 4 different websites per lookup. Your DID's own website is shown as `SAME_ORIGIN` and uses the existing origin binding check.
+
+## Step 4: require it in a policy
+
+If you accept DIDs from partners and want to be sure a DID belongs to a specific website, use the `linkedAccounts` policy rule. List 1 to 4 bare `https://` origins; each must be declared by the DID and confirmed.
+
+```bash
+curl -X POST https://did.is/api/v1/policies/evaluate \
+  -H 'content-type: application/json' \
+  -d '{"did":"did:web:did.is","policy":{"name":"official-website","rules":{"didResolution":"required","linkedAccounts":["https://docs.did.is"]}}}'
+```
+
+For `did:web:did.is` this returns `PASS` with "All 2 evaluated rules pass." The `observedValue` of the rule shows each origin and its status:
+
+```json
+{
+  "rule": "linkedAccounts",
+  "status": "PASS",
+  "expected": ["https://docs.did.is"],
+  "observedValue": { "https://docs.did.is": "CONFIRMED" },
+  "message": "1 linked website(s) confirmed in both directions"
+}
+```
+
+A website the DID does not list is reported as `NOT_DECLARED` and the rule fails. A website that could not be reached makes the rule `INDETERMINATE`, which is never a pass. You can try this in the [policy playground](https://did.is/policies) with the **Official website** preset. See [Policies](/build/policies/#rules) for every rule.
+
+## Step 5: get told when a link breaks
+
+A link can break without anyone touching the DID: the file is removed in a redesign, or the credential expires. Add the DID to [monitoring](/app/monitoring/) in the console. When a linked website's status changes while the DID document stays the same, DID.is sends a `linked_accounts.changed` event:
+
+```json
+{
+  "type": "linked_accounts.changed",
+  "data": {
+    "changes": [{ "origin": "https://docs.did.is", "from": "CONFIRMED", "to": "NOT_CONFIRMED" }],
+    "documentHash": "…"
+  }
+}
+```
+
+## Renew before it expires
+
+The credential stops counting the moment its expiry passes, and the website then shows `FAILED`. Put the expiry date in your calendar, sign a new credential a few weeks before, and replace the file. The DID document does not need to change.
+
+## Next steps
+
+- [Reading a result](/app/reading-a-result/) explains the rest of the result page.
+- [Policies](/build/policies/) lists every rule you can combine with `linkedAccounts`.
+- [Monitoring and webhooks](/app/monitoring/) covers events and delivery.

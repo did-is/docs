@@ -17,6 +17,7 @@ Monitoring is a console feature. It checks identifiers you choose every hour and
 | --- | --- |
 | `document.changed` | The DID document hash changed. `data` includes the old and new hash, the diff and the domain binding before and after. |
 | `domain_binding.changed` | The origin binding status changed. |
+| `linked_accounts.changed` | The DID document is unchanged, but a linked website started or stopped linking back. `data.changes` lists each website with its status before and after. See [Link your websites](/build/linked-websites/). |
 | `resolution.failed` | The identifier stopped resolving. |
 | `resolution.recovered` | It resolves again. |
 

@@ -534,7 +534,7 @@ let v: serde_json::Value = reqwest::Client::new()
 POST /v1/policies/evaluate
 ```
 
-Evaluates declarative rules (allowedMethods, allowedCurves, minKeyBits, requireKeyRelationship, domainBinding, tlsMinDaysRemaining, verifiableHistory, maxCacheAgeSeconds, credentialStatus, credentialIssuerMustBeSubject) against observed evidence. Unevaluable rules are INDETERMINATE, never PASS.
+Evaluates declarative rules (allowedMethods, allowedCurves, minKeyBits, requireKeyRelationship, domainBinding, tlsMinDaysRemaining, linkedAccounts, verifiableHistory, maxCacheAgeSeconds, credentialStatus, credentialIssuerMustBeSubject) against observed evidence. Unevaluable rules are INDETERMINATE, never PASS.
 
 Budget: **intensive**.
 

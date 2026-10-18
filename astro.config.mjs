@@ -123,6 +123,7 @@ export default defineConfig({
             { label: 'Credentials', slug: 'build/credentials' },
             { label: 'EU wallet credentials', slug: 'build/eu-credentials' },
             { label: 'Policies', slug: 'build/policies' },
+            { label: 'Link your websites', slug: 'build/linked-websites' },
             { label: 'Agent trust APIs', slug: 'build/agents' },
             { label: 'Guard agent tools', slug: 'build/guard-tools' },
             { label: 'Errors and rate limits', slug: 'build/errors' },

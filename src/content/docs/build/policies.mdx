@@ -162,6 +162,7 @@ All rules are optional. Only the rules you set are evaluated.
 | `requireKeyRelationship` | e.g. `"assertionMethod"` | A valid key is authorised for this relationship. |
 | `domainBinding` | `"required"` or `"optional"` | The DIF Well-Known DID Configuration verifies. |
 | `tlsMinDaysRemaining` | number | The origin's certificate is valid for at least this many days. |
+| `linkedAccounts` | 1 to 4 origins, e.g. `["https://shop.example"]` | Each website is listed in the DID's `alsoKnownAs` and links back to the DID. See [Link your websites](/build/linked-websites/). |
 | `verifiableHistory` | `"required"` | The DID has a cryptographically verifiable history (`did:webvh`). |
 | `maxCacheAgeSeconds` | number | The result is no older than this. |
 | `credentialStatus` | `"active"` | The supplied credential verifies and its status is clear. |
