@@ -1,0 +1,179 @@
+---
+title: First recipes
+description: Three complete programs for common first tasks — accept a partner's DID, accept a credential, and allow an agent's tool call — in curl, TypeScript and Python.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Each recipe is a whole program you can paste and run. None of them needs an account or an API key. Each one ends in a single yes-or-no decision, and shows what to do with every other answer.
+
+| You want to… | Call | Accept only |
+| --- | --- | --- |
+| [Accept a partner's DID](#accept-a-partners-did) | `POST /v1/policies/evaluate` | `PASS` |
+| [Accept a credential](#accept-a-credential) | `POST /v1/credentials/verify` | `requirements.met` (`VALID` and every condition `SATISFIED`) |
+| [Allow an agent's tool call](#allow-an-agents-tool-call) | `POST /v1/agents/authorize` | `ALLOW` |
+
+The SDKs (`@didis/client` 0.2.4 and `didis-py` 0.2.4 or later) wait and retry automatically when the free rate limit answers `429`, so these programs also work in a loop. With curl, wait for the number of seconds in `Retry-After` before sending again.
+
+## Accept a partner's DID
+
+**Task.** A supplier gives you `did:web:supplier.example`. Accept it only if it is published from its own domain over a valid certificate and its website links back to it.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST https://did.is/api/v1/policies/evaluate \
+  -H 'content-type: application/json' \
+  -d '{"did":"did:web:did.is","policy":{"name":"partner","rules":{"didResolution":"required","allowedMethods":["web","webvh"],"domainBinding":"required","tlsMinDaysRemaining":14}}}' \
+  | jq '{status: .evaluation.status, headline: .evaluation.headline, failed: [.evaluation.evaluations[] | select(.status != "PASS") | .message]}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
+const { evaluation } = await didis.evaluatePolicy("did:web:did.is", {
+  name: "partner",
+  rules: { didResolution: "required", allowedMethods: ["web", "webvh"], domainBinding: "required", tlsMinDaysRemaining: 14 },
+});
+
+if (evaluation.status === "PASS") {
+  console.log("Accept:", evaluation.headline);
+} else {
+  // FAIL: a rule is not met. INDETERMINATE: a check could not finish — not a pass.
+  console.log("Do not accept:", evaluation.status);
+  for (const e of evaluation.evaluations) if (e.status !== "PASS") console.log("-", e.rule, e.message);
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+with DidisClient() as didis:
+    evaluation = didis.evaluate_policy("did:web:did.is", {
+        "name": "partner",
+        "rules": {"didResolution": "required", "allowedMethods": ["web", "webvh"], "domainBinding": "required", "tlsMinDaysRemaining": 14},
+    })["evaluation"]
+
+if evaluation["status"] == "PASS":
+    print("Accept:", evaluation["headline"])
+else:
+    # FAIL: a rule is not met. INDETERMINATE: a check could not finish — not a pass.
+    print("Do not accept:", evaluation["status"])
+    for e in evaluation["evaluations"]:
+        if e["status"] != "PASS":
+            print("-", e["rule"], e["message"])
+```
+</TabItem>
+</Tabs>
+
+Replace `did:web:did.is` with your partner's DID. A `PASS` shows the identifier is controlled from that domain; it does not show who owns the domain. More rules: [Policies](/build/policies/#rules).
+
+## Accept a credential
+
+**Task.** A user presents a verifiable credential. Accept it only if the issuer's key signed it, it is current and not revoked, and it states that the holder is over 18.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST https://did.is/api/v1/credentials/verify \
+  -H 'content-type: application/json' \
+  -d '{"credential": "<JWT, SD-JWT VC or JSON credential>", "requiredClaims": [{"path": "/age_over_18", "equals": true}]}' \
+  | jq '{status, headline, met: .requirements.met, requirements: .requirements.results}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
+const credential = process.argv[2]; // the credential you received
+const r = await didis.verifyCredential(credential, {
+  requiredClaims: [{ path: "/age_over_18", equals: true }],
+});
+
+// requirements.met is true only when the credential is VALID and every condition is SATISFIED.
+if (r.requirements?.met) {
+  console.log("Accept:", r.headline);
+} else {
+  console.log("Do not accept:", r.status);
+  for (const c of r.checks) if (c.status === "FAIL" || c.status === "INDETERMINATE") console.log("-", c.label, c.detail);
+  for (const q of r.requirements?.results ?? []) if (q.result !== "SATISFIED") console.log("-", q.path, q.result);
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import sys
+from didis import DidisClient
+
+credential = sys.argv[1]  # the credential you received
+with DidisClient() as didis:
+    r = didis.verify_credential(credential, required_claims=[{"path": "/age_over_18", "equals": True}])
+
+# requirements["met"] is True only when the credential is VALID and every condition is SATISFIED.
+requirements = r.get("requirements") or {"met": False, "results": []}
+if requirements["met"]:
+    print("Accept:", r["headline"])
+else:
+    print("Do not accept:", r["status"])
+    for c in r["checks"]:
+        if c["status"] in ("FAIL", "INDETERMINATE"):
+            print("-", c["label"], c["detail"])
+    for q in requirements["results"]:
+        if q["result"] != "SATISFIED":
+            print("-", q["path"], q["result"])
+```
+</TabItem>
+</Tabs>
+
+`NOT_DISCLOSED` means the holder chose not to reveal that claim; ask again rather than reject outright. Claim values are never echoed back. Decide separately which issuers you accept. More: [Credentials](/build/credentials/).
+
+## Allow an agent's tool call
+
+**Task.** An AI agent wants to call `payments.refund`. Allow it only if a chain of signed delegation receipts leads back to an organization you trust.
+
+<Tabs syncKey="lang">
+<TabItem label="curl">
+```bash
+curl -s -X POST https://did.is/api/v1/agents/authorize \
+  -H 'content-type: application/json' \
+  -d '{"chain": ["<root receipt>", "<leaf receipt>"], "tool": "payments.refund", "trustedRoots": ["did:web:bank.example"]}' \
+  | jq '.authorization | {decision, reason}'
+```
+</TabItem>
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient();
+
+export async function allowTool(chain: string[], tool: string): Promise<boolean> {
+  const { authorization } = await didis.authorize(chain, tool, { trustedRoots: ["did:web:bank.example"] });
+  if (authorization.decision !== "ALLOW") console.warn("Denied:", authorization.reason);
+  return authorization.decision === "ALLOW";
+}
+```
+</TabItem>
+<TabItem label="Python">
+```python
+from didis import DidisClient
+
+didis = DidisClient()
+
+def allow_tool(chain: list[str], tool: str) -> bool:
+    authorization = didis.authorize(chain, tool, trusted_roots=["did:web:bank.example"])["authorization"]
+    if authorization["decision"] != "ALLOW":
+        print("Denied:", authorization["reason"])
+    return authorization["decision"] == "ALLOW"
+```
+</TabItem>
+</Tabs>
+
+Call it before the tool runs and stop on anything other than `ALLOW`. An empty or broken chain is always denied with a reason. Delegation receipts are an experimental DID.is format. To wrap tools automatically, see [Guard agent tools](/build/guard-tools/).
+
+## When something goes wrong
+
+Every error is a problem object with a stable `code`. The SDKs raise `DidisError`; read `status`, `problem.code` and `problem.detail`. See [Errors and rate limits](/build/errors/) for every code.

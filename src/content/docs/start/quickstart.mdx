@@ -109,12 +109,13 @@ The public API needs no account and no API key. Base URL: `https://did.is/api`.
     "detail":"did:example is not supported (supported: did:key, did:jwk, did:web, did:webvh)", "trace":[…]}
    ```
 
-   The SDKs raise `DidisError` with `status` and `problem`. On `429`, wait for the number of seconds in the `Retry-After` header. See [Errors and rate limits](/build/errors/).
+   The SDKs raise `DidisError` with `status` and `problem`. On `429` the SDKs (0.2.4 or later) wait for `Retry-After` and retry up to twice on their own; with curl, wait that many seconds yourself. See [Errors and rate limits](/build/errors/).
 
 </Steps>
 
 ## Next
 
+- [First recipes](/start/recipes/): accept a partner's DID, accept a credential, allow an agent's tool call — complete programs.
 - [Resolution and dereferencing](/build/resolution/): W3C output, DID URLs, history and diffs.
 - [Credentials](/build/credentials/): verify a verifiable credential.
 - [Agent trust APIs](/build/agents/): MCP, A2A and delegation receipts.
