@@ -127,6 +127,7 @@ export default defineConfig({
             { label: 'Link your websites', slug: 'build/linked-websites' },
             { label: 'Agent trust APIs', slug: 'build/agents' },
             { label: 'Guard agent tools', slug: 'build/guard-tools' },
+            { label: 'Agent frameworks and MCP', slug: 'build/frameworks' },
             { label: 'Errors and rate limits', slug: 'build/errors' },
             { label: 'Webhook signatures', slug: 'build/webhooks' },
           ],

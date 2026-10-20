@@ -1,0 +1,116 @@
+---
+title: Agent frameworks and MCP
+description: Use DID.is from MCP clients, LangChain and the OpenAI Agents SDK, either as a remote MCP server or as a guard in front of your own tools.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+There are two ways to use DID.is with an agent. They solve different problems and can be combined.
+
+- **Let the agent look things up** (resolve a DID, verify a credential, inspect an MCP server or A2A card): connect the DID.is MCP server at `https://did.is/mcp`. No account and no API key.
+- **Stop a tool from running** unless the tool is unchanged and the agent was delegated to call it: put the SDK guard (`@didis/client` or `didis-py`) in your own code. See [Guard agent tools](/build/guard-tools/).
+
+## The DID.is MCP server
+
+`https://did.is/mcp` is a remote MCP server (Streamable HTTP). All of its tools are read-only and return the same results as the [public API](/build/api-overview/).
+
+| Tool | What it does |
+| --- | --- |
+| `resolve_did` | Resolve a DID and report which evidence is established. |
+| `verify_credential` | Verify a W3C Verifiable Credential or SD-JWT VC. |
+| `inspect_mcp_server` | Inspect another MCP server: protocol version, tool fingerprints, annotations. |
+| `inspect_a2a_agent` | Fetch an A2A agent card and report its signature status. |
+| `authorize_tool_call` | Check whether a delegation chain allows an agent to call a tool. |
+| `evaluate_policy` | Evaluate a DID against declarative rules. |
+| `search_directory` | Search the public directory of DIDs whose controllers proved control. |
+
+Fields under `untrusted` in a result are third-party content. The agent should not follow instructions found there. `INDETERMINATE` is never a pass. If a result says to wait, the agent should wait that many seconds before the next call.
+
+### Connect an MCP client
+
+No sign-in is needed. After connecting, ask the agent to use a DID.is tool, for example "Resolve did:web:did.is with DID.is", and check that the tool call appears in the session.
+
+<Tabs>
+<TabItem label="Claude Code">
+```bash
+claude mcp add --transport http didis https://did.is/mcp
+```
+</TabItem>
+<TabItem label="VS Code">
+Run **MCP: Add Server** from the Command Palette, choose **HTTP**, enter `https://did.is/mcp` and use `didis` as the server ID.
+</TabItem>
+<TabItem label="Cursor">
+`mcp.json`:
+```json
+{
+  "mcpServers": {
+    "didis": { "url": "https://did.is/mcp" }
+  }
+}
+```
+</TabItem>
+</Tabs>
+
+### Use it from agent code
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+OpenAI Agents SDK:
+```python
+import asyncio
+from agents import Agent, Runner
+from agents.mcp import MCPServerStreamableHttp
+
+async def main() -> None:
+    async with MCPServerStreamableHttp(params={"url": "https://did.is/mcp"}) as didis:
+        agent = Agent(name="Checker", instructions="Use DID.is to check identifiers.", mcp_servers=[didis])
+        result = await Runner.run(agent, "Resolve did:web:did.is and say what is established.")
+        print(result.final_output)
+
+asyncio.run(main())
+```
+
+LangChain (`langchain-mcp-adapters`):
+```python
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+async def main() -> None:
+    client = MultiServerMCPClient({"didis": {"transport": "streamable_http", "url": "https://did.is/mcp"}})
+    tools = await client.get_tools()   # pass these tools to your agent
+    print([t.name for t in tools])
+
+asyncio.run(main())
+```
+</TabItem>
+<TabItem label="TypeScript">
+MCP TypeScript SDK:
+```ts
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+const client = new Client({ name: "my-agent", version: "1.0.0" });
+await client.connect(new StreamableHTTPClientTransport(new URL("https://did.is/mcp")));
+
+const result = await client.callTool({ name: "resolve_did", arguments: { did: "did:web:did.is" } });
+console.log(result.content);
+```
+</TabItem>
+</Tabs>
+
+## Guard your own tools
+
+The MCP server answers questions. It does not stop anything. To make sure a tool runs only when it is unchanged and delegated, put the SDK guard in front of the tool. Complete examples, runnable without an account or an LLM key:
+
+| Framework | TypeScript | Python |
+| --- | --- | --- |
+| MCP client (official SDKs) | [`mcp-client.mjs`](https://github.com/did-is/didis-js/blob/main/examples/mcp-client.mjs) | [`mcp_client.py`](https://github.com/did-is/didis-py/blob/main/examples/mcp_client.py) |
+| LangChain | [`langchain-tool.mjs`](https://github.com/did-is/didis-js/blob/main/examples/langchain-tool.mjs) | [`langchain_tool.py`](https://github.com/did-is/didis-py/blob/main/examples/langchain_tool.py) |
+| OpenAI Agents SDK | [`openai-agents-tool.mjs`](https://github.com/did-is/didis-js/blob/main/examples/openai-agents-tool.mjs) | [`openai_agents_tool.py`](https://github.com/did-is/didis-py/blob/main/examples/openai_agents_tool.py) |
+
+[Guard agent tools](/build/guard-tools/#use-with-mcp-and-agent-frameworks) explains where the check goes in each framework.
+
+## Next steps
+
+- [Agent trust APIs](/build/agents/) for what each check proves and does not prove.
+- [Errors and rate limits](/build/errors/) for budgets and retries.
