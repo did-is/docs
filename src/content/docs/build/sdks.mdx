@@ -25,7 +25,7 @@ The SDKs **add no checks of their own**. Every result comes from the API and mea
 
 | | TypeScript | Python |
 | --- | --- | --- |
-| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.2.1 | [`didis-py`](https://pypi.org/project/didis-py/) 0.2.1 (import `didis`) |
+| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.2.5 | [`didis-py`](https://pypi.org/project/didis-py/) 0.2.5 (import `didis`) |
 | Source | [did-is/didis-js](https://github.com/did-is/didis-js) | [did-is/didis-py](https://github.com/did-is/didis-py) |
 | Runtime | Any runtime with `fetch`: Node 18+, Deno, Bun, browsers, edge. Zero dependencies, ESM. | Python 3.11+, `httpx`. Sync `DidisClient` and async `AsyncDidisClient`. |
 | Responses | Typed objects | Plain `dict`s typed with `TypedDict` (`didis.types`) |
@@ -33,7 +33,7 @@ The SDKs **add no checks of their own**. Every result comes from the API and mea
 
 ## What they do not do
 
-- **Retries.** A `429` or `503` raises `DidisError`; you decide when to retry (see [Errors and rate limits](/build/errors/#retrying-in-the-sdks)).
+- **Retries beyond `Retry-After`.** From 0.2.4 the SDKs wait for `Retry-After` and retry a `429` or `503` up to twice (at most 10 seconds per wait). Other errors raise `DidisError` at once. Pass `retry: false` (TypeScript) or `retry=False` (Python) to handle every retry yourself (see [Errors and rate limits](/build/errors/#retrying-in-the-sdks)).
 - **Directory and claims.** These endpoints have no SDK method; call them over HTTP (see the [API reference](/reference/api/#directory-and-claims)).
 - **Gateway middleware.** There is no ready-made proxy or framework plugin. To guard individual tool handlers, use the SDK guard; [Guard agent tools](/build/guard-tools/#use-with-mcp-and-agent-frameworks) shows how with MCP clients, LangChain and the OpenAI Agents SDK.
 
@@ -125,6 +125,43 @@ asyncio.run(main())
 
 In Rust, percent-encode the identifier once, and on non-2xx responses read the RFC 9457 problem body and the `Retry-After` header yourself (see [Errors](/build/errors/)).
 
+## Using a project API key
+
+Without a key, every call uses the anonymous public API and its per-client budget. With a project API key from the [console](/app/accounts/) (SDK 0.2.5 or later), four methods count against your team's monthly allowance instead: `inspectMcp`, `inspectA2a`, `authorize` and `verifyDelegation` (`inspect_mcp`, `inspect_a2a`, `authorize`, `verify_delegation` in Python). The results are the same as without a key.
+
+<Tabs syncKey="lang">
+<TabItem label="TypeScript">
+```ts
+import { DidisClient } from "@didis/client";
+
+const didis = new DidisClient({ apiKey: process.env.DID_IS_API_KEY });
+
+const decision = await didis.authorize(chain, "payments:refund");
+const usage = await didis.usage();
+console.log(usage.expensiveUsed, "of", usage.expensiveLimit, "used in", usage.period);
+```
+</TabItem>
+<TabItem label="Python">
+```python
+import os
+from didis import DidisClient
+
+with DidisClient(api_key=os.environ["DID_IS_API_KEY"]) as didis:
+    decision = didis.authorize(chain, "payments:refund")
+    usage = didis.usage()
+    print(usage["expensiveUsed"], "of", usage["expensiveLimit"], "used in", usage["period"])
+```
+</TabItem>
+</Tabs>
+
+- **The key is sent only for those calls** and for `usage()`. All other methods, and `verifyDelegation` with `register: true`, keep using the public API without the key.
+- **Keep the key server-side.** Read it from an environment variable or a secret store. Never put it in browser or mobile code.
+- **No double billing.** Each call carries a fresh idempotency key, and the automatic retries reuse it, so a retried request is counted once.
+- **`usage()`** returns this month's allowance for the whole team (all projects share it): `period`, plus `Used`, `Reserved`, `Limit` and `Remaining` for the `standard` and `expensive` pools. It needs a key and is not counted.
+- **When the allowance is used up,** these calls raise `DidisError` with status `429` and code `QUOTA_EXHAUSTED` until the next month or a plan change. Retrying does not help. Remove the key to fall back to the anonymous public API.
+
+The team's owners also get an email at 80% and at 100% of each monthly allowance (see [Accounts, projects and plans](/app/accounts/#usage-and-alerts)).
+
 ## Reading the result
 
 | What happens | What it means | What to do |
@@ -156,6 +193,7 @@ In Rust, percent-encode the identifier once, and on non-2xx responses read the R
 | `verifyTool(agent, tool, root?)` | `verify_tool(agent, tool, root=None)` | `GET /v1/agents/verify-tool` |
 | `fastVerifyDid(did)` | `fast_verify_did(did)` | `GET /v1/fast-verify/did/{did}` |
 | `fastVerifyJws(jws, relationship?)` | `fast_verify_jws(jws, relationship=None)` | `POST /v1/fast-verify/jws` |
+| `usage()` (needs a key) | `usage()` (needs `api_key`) | Team allowance this month |
 | `verifyCustomerMonitorSignature(…)` | `verify_customer_monitor_signature(…)` | [Webhook signatures](/build/webhooks/) |
 
 ## No CLI
