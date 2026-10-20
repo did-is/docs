@@ -19,11 +19,12 @@ A DID is like a digital business card that its owner publishes and controls. DID
 | Task | Web app | API |
 | --- | --- | --- |
 | Resolve a DID and explain the result | [did.is](https://did.is) | [`GET /v1/resolve/{did}`](/build/resolution/) |
+| Check a did:web setup (`did.json` location, TLS, id, keys) | [did.is/tools/did-web](https://did.is/tools/did-web) | [`GET /v1/resolve/{did}`](/build/resolution/) |
 | Standard W3C DID Resolution output | — | [`GET /1.0/identifiers/{did}`](/build/resolution/#w3c-did-resolution) |
 | Watch a resolution step by step | Result page, telemetry level | [`GET /v1/stream/{did}`](/build/stream/) |
 | Verify a verifiable credential | [did.is/verify](https://did.is/verify) | [`POST /v1/credentials/verify`](/build/credentials/) |
 | Evaluate a policy | [did.is/policies](https://did.is/policies) | [`POST /v1/policies/evaluate`](/build/policies/) |
-| Inspect an MCP server or A2A agent card | [did.is/agents](https://did.is/agents) | [`/v1/mcp/inspect`, `/v1/a2a/inspect`](/build/agents/) |
+| Inspect an MCP server or A2A agent card | [did.is/agents](https://did.is/agents), or [did.is/tools/mcp-check](https://did.is/tools/mcp-check) with a README badge | [`/v1/mcp/inspect`, `/v1/a2a/inspect`](/build/agents/) |
 | Verify a delegation chain for an agent | [did.is/agents](https://did.is/agents) | [`/v1/agents/verify-delegation`](/build/agents/#verify-a-delegation-chain) |
 | Find identifiers that opted in to be listed | [did.is/discover](https://did.is/discover) | [`GET /v1/directory`](/reference/api/#directory-and-claims) |
 

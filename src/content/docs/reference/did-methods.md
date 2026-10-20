@@ -35,6 +35,8 @@ Example: `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK`.
 
 `did:web:<domain>[%3A<port>][:<path>]*` maps to `https://<domain>[:<port>]/.well-known/did.json`, or `https://<domain>[:<port>]/<path>/did.json` when a path is present.
 
+To check your own setup, enter your domain on [did.is/tools/did-web](https://did.is/tools/did-web). It shows the identifier and the exact `did.json` URL, then resolves it, and lists the most common mistakes.
+
 In addition to the method specification, DID.is:
 
 - refuses IP literals, credentials in URLs, dot segments and double encoding;
