@@ -12,7 +12,7 @@ Every resolution from `GET /v1/resolve/{did}` (and the result page on did.is) ha
 | Field | Meaning |
 | --- | --- |
 | `outcome` | `RESOLVED`, `RESOLVED_WITH_WARNINGS` (a dimension `FAILED`, a key is invalid, or the document has warnings) or `DEACTIVATED`. |
-| `headline` | One sentence about control, e.g. "Cryptographically controlled via Ed25519." |
+| `headline` | One sentence about control, e.g. "Self-certifying Ed25519 DID; private-key possession not tested." |
 | `statements` | Short facts about origin, history and identity. |
 
 The verdict is a summary of the dimensions, not a score.

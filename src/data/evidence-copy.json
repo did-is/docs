@@ -1,0 +1,45 @@
+{
+  "keyHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+  "origin": {
+    "FUTURE_STATUS": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "INDETERMINATE"
+    },
+    "INVALID_PROOF": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "FAILED"
+    },
+    "MALFORMED": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "FAILED"
+    },
+    "NOT_CONFIGURED": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "NOT_ESTABLISHED"
+    },
+    "NOT_LINKED": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "NOT_ESTABLISHED"
+    },
+    "UNREACHABLE": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "INDETERMINATE"
+    },
+    "UNSUPPORTED_PROOF": {
+      "doesNotProve": "A successful binding between this DID and the origin; who operates the origin.",
+      "proves": "",
+      "state": "INDETERMINATE"
+    },
+    "VERIFIED": {
+      "doesNotProve": "Who operates the origin.",
+      "proves": "The DID's key signed a statement linking it to this exact origin (bidirectional binding).",
+      "state": "ESTABLISHED"
+    }
+  }
+}

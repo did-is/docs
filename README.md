@@ -152,3 +152,7 @@ Contributions must adhere to the following standards:
 - **Live OpenAPI Conformance**: Every referenced API endpoint must exist in the published OpenAPI specification.
 - **Strict Wording**: Documentation avoids hyperbolic language and clearly distinguishes verified evidence from unverified claims.
 - **Link Integrity**: All internal links and anchor references are verified prior to deployment.
+
+## Evidence example maintenance
+
+Resolution observations remain dated captures, not fresh network checks. Their explanatory text is synchronized offline from the service's core-generated copy contract. Run the service's `scripts/docs/sync-evidence-copy.mjs` with this repository path after regenerating that contract. `npm run check` guards the captured origin proof text, self-certifying headline and DID 1.1 lifecycle label against regressions.

@@ -16,7 +16,7 @@ A result page on did.is has four levels. Each adds detail; you can stop at any l
 
 The headline describes control, for example:
 
-- `did:key`: "Cryptographically controlled via Ed25519."
+- `did:key`: "Self-certifying Ed25519 DID; private-key possession not tested."
 - `did:web:did.is`: "Controlled by the operator of did.is; publishes Ed25519 verification keys."
 
 Below it, each of the seven [evidence dimensions](/start/concepts/) shows its state and statement, with what it **proves** and what it **does not prove**. Read the "does not prove" line before relying on a result.

@@ -1,7 +1,8 @@
 ---
 /**
  * Evidence dimensions across live example resolutions.
- * Data: src/data/resolve-examples.json, captured from GET /v1/resolve/{did} (live API).
+ * Data: captured resolutions in src/data/resolve-examples.json; explanations synchronized
+ * offline from the core-generated evidence-copy contract, not new live observations.
  */
 import examples from '../data/resolve-examples.json';
 
@@ -53,7 +54,7 @@ const captured = examples
   </table>
 </div>
 <p class="caption">
-  Captured from <code>GET /v1/resolve/&#123;did&#125;</code>{captured && <> on {captured}</>}. Live results change when the
+  Captured from <code>GET /v1/resolve/&#123;did&#125;</code>{captured && <> on {captured}</>}. Explanations follow the current supported checks, not a fresh observation. Live results change when the
   identifier's document, certificate or configuration changes.
 </p>
 

@@ -4,7 +4,7 @@
     "observedAt": "2026-10-11T00:20:23Z",
     "verdict": {
       "outcome": "RESOLVED",
-      "headline": "Cryptographically controlled via Ed25519.",
+      "headline": "Self-certifying Ed25519 DID; private-key possession not tested.",
       "statements": [
         "Self-certifying: not bound to any origin.",
         "Organization not established."
@@ -182,8 +182,8 @@
         "label": "Origin binding",
         "state": "INDETERMINATE",
         "statement": "Linkage proof format not supported: legacy Linked Data proof type 'JsonWebSignature2020' requires JSON-LD/RDF canonicalization, which DID.is does not implement",
-        "proves": "The DID's key signed a statement linking it to this exact origin (bidirectional binding).",
-        "doesNotProve": "Who operates the origin."
+        "proves": "",
+        "doesNotProve": "A successful binding between this DID and the origin; who operates the origin."
       },
       {
         "id": "transport",

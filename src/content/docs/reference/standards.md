@@ -3,13 +3,14 @@ title: Standards and conformance
 description: The specifications DID.is implements, the versions it follows and the known gaps.
 ---
 
-The live list is returned by `GET /health` under `standards`. This page explains it.
+As of 23 October 2026. Specification lifecycle is separate from implementation support. The live supported-method list is returned by `GET /health` under `standards`; the [detailed registry](https://did.is/standards) records scope and limits.
 
 ## Identifiers and resolution
 
 | Specification | Status in DID.is |
 | --- | --- |
-| W3C DID Core 1.0 | DID syntax, documents and verification relationships. |
+| [W3C DID Core 1.0](https://www.w3.org/TR/2022/REC-did-core-20220719/) — Recommendation, 19 July 2022 | Implemented: DID syntax, documents and verification relationships within the registry scope. |
+| [W3C DID 1.1](https://www.w3.org/TR/2026/CR-did-1.1-20260305/) — Candidate Recommendation Snapshot, 05 March 2026 | Partial: shared syntax and document-model subset; not full DID 1.1 conformance. |
 | W3C DID Resolution v1 (Candidate Recommendation Draft), HTTPS binding | `/1.0/identifiers/{did}`: content negotiation, RFC 9457 errors, the specification's status codes, 410 for deactivated DIDs, DID URL dereferencing. |
 | `did:key` (W3C CCG, v0.9) | Supported. See [DID methods](/reference/did-methods/). |
 | `did:jwk` (DIF) | Supported. |

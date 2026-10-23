@@ -127,3 +127,16 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('all documentation checks passed');
+
+// Captured examples must not reintroduce stale successful proof text for negative states.
+const copy = JSON.parse(fs.readFileSync(path.join(root, 'src/data/evidence-copy.json')));
+const examples = JSON.parse(fs.readFileSync(path.join(root, 'src/data/resolve-examples.json')));
+for (const example of examples) {
+  const origin = example.dimensions.find(d => d.id === 'origin');
+  const expected = Object.values(copy.origin).find(d => d.state === origin.state);
+  if (expected && (origin.proves !== expected.proves || origin.doesNotProve !== expected.doesNotProve)) throw new Error('Origin example copy differs from core contract');
+  if (/^did:(key|jwk):/.test(example.did) && /Ed25519/.test(example.verdict.headline) && example.verdict.headline !== copy.keyHeadline) throw new Error('Self-certifying headline differs from core contract');
+}
+const standardsSource = fs.readFileSync(path.join(root, 'src/content/docs/reference/standards.md'), 'utf8');
+if (!standardsSource.includes('CR-did-1.1-20260305') || !standardsSource.includes('Candidate Recommendation Snapshot, 05 March 2026')) throw new Error('DID 1.1 lifecycle snapshot missing');
+console.log('Evidence-copy and DID edition guards passed.');
