@@ -7,6 +7,12 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 An agent tool is dangerous in two ways: the tool can change after you approved it (an MCP server silently rewrites a description or schema), and the agent can call a tool nobody delegated to it. The SDK guard checks both **before** your handler runs. If either check fails, or DID.is cannot answer, the handler does not run.
 
+## First, see a definition change block a call
+
+[Run the offline MCP definition-change demo](https://github.com/did-is/mcp-examples/tree/main/examples/02-block-definition-drift), or [read its actual recorded output](https://github.com/did-is/mcp-examples/blob/main/docs/demo.md). The unchanged tool enters its handler once; after a description change, the denied attempt enters zero times. Default runs need no account, API key, or LLM key.
+
+That example uses the public SDK fingerprint helpers and a local execution boundary. It deliberately does **not** use `createDidisGuard` or fake delegation authority. Continue below to add the full guard's separate authorization check. Inspection, pin equality, and delegation are distinct checks; none certifies a server's behavior.
+
 ## What is checked
 
 - **Definition pin (local).** The tool definition the agent actually received hashes to the SHA-256 you approved. The hash is RFC 8785 (JCS) + SHA-256, the same `definitionSha256` DID.is reports for MCP tools. No network call.

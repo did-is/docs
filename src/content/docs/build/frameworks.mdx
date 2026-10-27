@@ -10,6 +10,18 @@ There are two ways to use DID.is with an agent. They solve different problems an
 - **Let the agent look things up** (resolve a DID, verify a credential, inspect an MCP server or A2A card): connect the DID.is MCP server at `https://did.is/mcp`. No account and no API key.
 - **Stop a tool from running** unless the tool is unchanged and the agent was delegated to call it: put the SDK guard (`@didis/client` or `didis-py`) in your own code. See [Guard agent tools](/build/guard-tools/).
 
+## Pick a runnable example
+
+The [MCP examples repository](https://github.com/did-is/mcp-examples) separates three jobs instead of treating connection as protection:
+
+| Your job | Start here | Default behavior |
+| --- | --- | --- |
+| Connect your MCP client to DID.is | [Connection example](https://github.com/did-is/mcp-examples/tree/main/examples/00-connect-didis) | Prints instructions; `--live` opts in to a real tool round trip. |
+| Inspect another public MCP server | [TypeScript inspection](https://github.com/did-is/mcp-examples/tree/main/examples/01-inspect-public-server) · [Python mirror](https://github.com/did-is/mcp-examples/tree/main/python/01-inspect-public-server) | Reads a labeled offline fixture; live inspection requires an explicit option and an owned or permitted public endpoint. |
+| Stop a wrapped call after approved definitions change | [Definition-change demo](https://github.com/did-is/mcp-examples/tree/main/examples/02-block-definition-drift) | Runs a controlled offline MCP server: unchanged executes once; changed definitions execute zero times. |
+
+Default demos need no DID.is account, API key, or LLM key. IDE subscriptions and model requirements are separate. The offline blocking demo is a local definition-pin policy, **not delegation authorization or the full SDK guard**. Connecting the remote DID.is server does not protect your other tools. [See the actual recorded run and copy the execution boundary](https://github.com/did-is/mcp-examples/blob/main/docs/demo.md).
+
 ## The DID.is MCP server
 
 `https://did.is/mcp` is a remote MCP server (Streamable HTTP). All of its tools are read-only and return the same results as the [public API](/build/api-overview/).
