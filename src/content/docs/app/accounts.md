@@ -12,7 +12,7 @@ The public API and web app need no account. Create an account at [did.is/account
 | **Projects** | Group keys, monitoring, webhooks and usage. Projects in the same team share the team’s plan and monthly allowance. |
 | **Project API keys** | Authenticate private API requests. A key is shown once, at creation; you can rotate it. Keep keys server-side and never ship them to browsers or mobile apps. |
 | **Private resolution** | Metered resolution that is never written to public observation history. Use it for identifiers that must not be disclosed. |
-| **Monitoring** | Hourly checks of identifiers you choose, with signed webhooks on changes. See [Monitoring and webhooks](/app/monitoring/). |
+| **Monitoring** | Pro/Max hourly identifier checks (5/25 active watches per team), with signed webhooks on observed changes. See [Monitoring and webhooks](/app/monitoring/). |
 | **Team members** | Invite people to a team by email and assign roles; membership applies across its projects. |
 | **Control claims** | Prove you control a DID (key signature, `/.well-known/did-is-claim.txt` or a `_didis-claim` DNS TXT record), then optionally list it in the [public directory](https://did.is/discover). Claims are free and valid for 90 days. |
 

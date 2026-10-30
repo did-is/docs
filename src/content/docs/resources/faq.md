@@ -29,7 +29,7 @@ The host resolves to a non-public address (loopback, private network, link-local
 
 ## Why do I get `429 RATE_LIMITED`?
 
-You used up a request budget: 20 requests per minute standard, 2 per minute for intensive endpoints. Wait the number of seconds in `Retry-After`. See [Errors and rate limits](/build/errors/).
+Each client has a standard budget of 20 requests per minute overall, with an additional limit of 10 requests per minute for intensive requests (verification, streaming and `did:webvh`). Intensive requests also consume the standard budget. These are per-client limits, not a shared server-wide allowance. On `429 RATE_LIMITED`, read `Retry-After` on that response and wait that many seconds before retrying; the delay is not fixed. See [Errors and rate limits](/build/errors/).
 
 ## How do I pass a DID URL with a fragment?
 
@@ -45,7 +45,7 @@ No. Use `curl` or the [SDKs](/build/sdks/).
 
 ## Do I need an API key?
 
-Not for the public API. A project key from the [console](/app/accounts/) gives private resolution, monitoring and webhooks.
+Not for the public API. A project key from the [console](/app/accounts/) gives private resolution. [Identifier monitoring and its signed webhooks](/app/monitoring/) require a Pro or Max team and use its shared watch slots.
 
 ## Are my lookups private?
 

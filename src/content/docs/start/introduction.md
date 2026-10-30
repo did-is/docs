@@ -44,7 +44,7 @@ Each resolution returns a **verdict** (one headline plus short statements) and s
 
 ## Public and private use
 
-Public API requests may appear in an identifier's public observation history. If you resolve identifiers that must not be disclosed, use a project in the [console](/app/accounts/), which adds private resolution, API keys, monitoring and signed webhooks.
+Public API requests may appear in an identifier's public observation history. If you resolve identifiers that must not be disclosed, use a project in the [console](/app/accounts/), which adds private resolution and API keys. Pro and Max also add [hourly identifier monitoring and signed webhooks](/app/monitoring/), within the team’s shared watch slots.
 
 ## Next steps
 

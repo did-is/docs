@@ -8,7 +8,8 @@
     "build": "astro build && node scripts/postbuild.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "node --test scripts/audit-contracts.test.mjs && node scripts/check-docs.mjs"
+    "check": "node --test scripts/*.test.mjs && node scripts/check-docs.mjs",
+    "check:source": "node scripts/check-service-contract.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.6",

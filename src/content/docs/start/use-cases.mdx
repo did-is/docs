@@ -144,7 +144,7 @@ Store the fingerprints of the tools you approve. If one changes, review it again
   <div class="pp-no"><h4>What it does not show</h4><ul><li>Why it changed or who changed it. A key rotation can be routine.</li><li>Changes between two hourly checks that were reverted.</li></ul></div>
 </div>
 
-Monitoring is a console feature: create a project, add identifiers and a webhook URL, then [verify each delivery's signature](/build/webhooks/). See [Monitoring and webhooks](/app/monitoring/).
+Identifier monitoring requires a Pro or Max team (5 or 25 active watches per team, shared across projects). It supports `did:key`, `did:jwk` and `did:web`, not `did:webvh`. Checks are hourly and can miss changes between checks. Open a project, add supported identifiers and a webhook URL, then [verify each delivery's signature](/build/webhooks/). See [Monitoring and webhooks](/app/monitoring/).
 
 ## Verify signatures at the gateway
 

@@ -3,12 +3,28 @@ title: Monitoring and webhooks
 description: Hourly identifier monitoring in the console, the events it sends and how webhook delivery works.
 ---
 
-Monitoring is a console feature. It checks identifiers you choose every hour and sends a signed webhook when something changes.
+Identifier monitoring is a paid console feature on **Pro and Max**. It checks watched identifiers **hourly** and sends a signed webhook when a change is observed.
+
+| Team plan | Active identifier watches |
+| --- | --- |
+| Free | 0 |
+| Pro | 5 |
+| Max | 25 |
+
+Slots are pooled **per team**, across all its projects; creating another project does not add slots. See [plans and prices](https://did.is/pricing).
+
+Supported monitoring methods are **`did:key`, `did:jwk` and `did:web` only**. `did:webvh` is not supported for monitoring, even though the public resolver supports it. Add a DID, not a DID URL with a path, query or fragment.
+
+Hourly checks are observations, not real-time detection. A change that happens and is reverted between checks may not be detected. Monitoring does not establish legal identity or certify an operator’s behaviour.
+
+## Identifier monitoring is not scheduled MCP inspection
+
+The limits above cover identifier watches, not MCP servers. [MCP inspection](/app/agents/) is an on-demand check; running it once does not enable continuous monitoring. Scheduled MCP tool-change alerts are a separate feature and are **not yet enabled**. Do not rely on them for background checks or notifications.
 
 ## Set it up
 
-1. In the [console](https://did.is/account), open a project.
-2. Add the identifiers to watch (hourly).
+1. In the [console](https://did.is/account), choose a team on Pro or Max and open a project.
+2. Add supported identifiers to watch within the team’s shared slots (5 on Pro, 25 on Max; hourly).
 3. Configure a webhook URL. The signing secret is shown once; store it server-side.
 
 ## Events

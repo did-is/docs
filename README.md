@@ -153,6 +153,10 @@ Contributions must adhere to the following standards:
 - **Strict Wording**: Documentation avoids hyperbolic language and clearly distinguishes verified evidence from unverified claims.
 - **Link Integrity**: All internal links and anchor references are verified prior to deployment.
 
+## Public contract maintenance
+
+After changing public operation statuses, rate limits or monitoring plans, run `npm run check:source -- <service-checkout>` with a trusted local service checkout (Node 24 or later). This offline, read-only check evaluates the service’s actual OpenAPI generator and compares all documented operation statuses and budgets. It also checks the rate limiter, retry delay, team watch limits, monitoring method allowlist and separate scheduled MCP availability contract against service source. Source hashes are printed for evidence; no API requests are made. `npm run check` includes documentation regressions and mutation tests without requiring that checkout. Source structure changes fail for review rather than silently skipping checks.
+
 ## Evidence example maintenance
 
 Resolution observations remain dated captures, not fresh network checks. Their explanatory text is synchronized offline from the service's core-generated copy contract. Run the service's `scripts/docs/sync-evidence-copy.mjs` with this repository path after regenerating that contract. `npm run check` guards the captured origin proof text, self-certifying headline and DID 1.1 lifecycle label against regressions.

@@ -5,9 +5,9 @@ description: All 20 operations of the DID.is public API, with parameters, reques
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-Base URL `https://did.is/api`. No authentication. This page is generated from the [OpenAPI document](https://did.is/api/openapi.json); use that file for code generation.
+Base URL `https://did.is/api`. No authentication. This reference follows the [OpenAPI document](https://did.is/api/openapi.json); use that file for code generation.
 
-Budgets: *standard* 20 requests per minute, *intensive* 10 requests per minute, per client. Native JSON HTTP API errors use top-level RFC 9457 problem responses. The W3C binding wraps the problem in `didResolutionMetadata.error`; SSE uses `error` events after streaming starts, and hosted MCP uses JSON-RPC or tool-result errors. See [Errors and rate limits](/build/errors/).
+Budgets: *standard* 20 requests per minute, *intensive* 10 requests per minute, per client. Intensive requests also consume the standard budget; `did:webvh` requests use the intensive limit even on otherwise standard operations. These are not server-wide totals. Native JSON HTTP API errors use top-level RFC 9457 problem responses. The W3C binding wraps the problem in `didResolutionMetadata.error`; SSE uses `error` events after streaming starts, and hosted MCP uses JSON-RPC or tool-result errors. See [Errors and rate limits](/build/errors/).
 
 Every budgeted operation can answer `429 RATE_LIMITED` and `503 CAPACITY_EXHAUSTED`. Both carry a `Retry-After` header with the number of seconds to wait; read it on each response instead of using a fixed delay. Request bodies are limited to 512 KiB (`413 PAYLOAD_TOO_LARGE`).
 
@@ -34,6 +34,8 @@ Every budgeted operation can answer `429 RATE_LIMITED` and `503 CAPACITY_EXHAUST
 | GET | [`/health`](#health-and-capabilities) | none |
 | GET | [`/v1/status`](#service-status) | standard |
 
+Outbound operations below explicitly list `403 EGRESS_BLOCKED` for a refused target address or scheme and `424 UPSTREAM_UNAVAILABLE` for remote DNS, TLS or timeout failures. These statuses are not added to unrelated operations: the W3C binding and an already-open SSE stream use their own error envelopes. A2A inspection also returns `404 NOT_FOUND` when there is no agent card.
+
 ## Resolution
 
 ### Resolve with evidence
@@ -51,7 +53,7 @@ Budget: **standard**.
 | `did` (required) | path | The identifier to resolve. |
 | `noCache` | query | Bypass and refresh the resolver cache. |
 
-Responses: `200`, `400`, `429`, `503`.
+Responses: `200`, `400`, `403`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -209,7 +211,7 @@ Budget: **standard**.
 | --- | --- | --- |
 | `didUrl` (required) | path | e.g. did:web:example.com%23key-1 |
 
-Responses: `200`, `400`, `404`, `429`, `503`.
+Responses: `200`, `400`, `403`, `404`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -260,7 +262,7 @@ Budget: **standard**.
 | `did` (required) | path | The identifier. |
 | `noCache` | query | Bypass and refresh the resolver cache. |
 
-Responses: `200`, `400`, `429`, `503`.
+Responses: `200`, `400`, `403`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -414,7 +416,7 @@ Budget: **standard**.
 | --- | --- | --- |
 | `did` (required) | path | The identifier. |
 
-Responses: `200`, `400`, `429`, `503`.
+Responses: `200`, `400`, `403`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -667,7 +669,7 @@ Budget: **intensive**.
 | --- | --- | --- |
 | `endpoint` (required) | query | The MCP endpoint. |
 
-Responses: `200`, `400`, `429`, `503`.
+Responses: `200`, `400`, `403`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -717,7 +719,7 @@ Budget: **intensive**.
 | --- | --- | --- |
 | `url` (required) | query | Agent origin or card URL. |
 
-Responses: `200`, `400`, `429`, `503`.
+Responses: `200`, `400`, `403`, `404`, `424`, `429`, `503`.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
