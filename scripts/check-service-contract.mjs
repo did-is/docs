@@ -22,8 +22,10 @@ const source = file => {
 // Strip only their static relative imports/exports; no module resolution, filesystem or network in the context.
 const javascript = text => stripTypeScriptTypes(text.replace(/^import [^\n]+;\n/gm, '').replace(/^export /gm, ''));
 const endpoints = source('apps/web/src/lib/endpoints.ts');
+const schemas = source('apps/web/src/lib/openapi-schemas.ts');
+const examples = source('apps/web/src/lib/openapi-examples.ts');
 const openapi = source('apps/web/src/lib/openapi.ts');
-const spec = vm.runInNewContext(`${javascript(endpoints)}\n${javascript(openapi)}\nbuildOpenApi('docs-contract-check')`, { BASE: 'https://did.is/api' }, { timeout: 1000 });
+const spec = vm.runInNewContext(`${javascript(endpoints)}\n${javascript(schemas)}\n${javascript(examples)}\n${javascript(openapi)}\nbuildOpenApi('docs-contract-check')`, { BASE: 'https://did.is/api' }, { timeout: 1000 });
 const operations = publicDocsContract(file => fs.readFileSync(path.join(root, 'src/content/docs', file), 'utf8'));
 compareOpenApi(operations, JSON.parse(JSON.stringify(spec)));
 assert.match(spec.info.description, /standard 20 requests\/min, intensive 10 requests\/min per client/);

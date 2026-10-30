@@ -1,0 +1,14 @@
+---
+import DefaultHead from '@astrojs/starlight/components/Head.astro';
+import sans400 from '@fontsource/geist-sans/files/geist-sans-latin-400-normal.woff2?url';
+import sans500 from '@fontsource/geist-sans/files/geist-sans-latin-500-normal.woff2?url';
+import sans600 from '@fontsource/geist-sans/files/geist-sans-latin-600-normal.woff2?url';
+import mono400 from '@fontsource/geist-mono/files/geist-mono-latin-400-normal.woff2?url';
+import mono500 from '@fontsource/geist-mono/files/geist-mono-latin-500-normal.woff2?url';
+---
+
+<DefaultHead {...Astro.props} />
+<!-- Discover all used weights before body text requests them independently. -->
+{[sans400, sans500, sans600, mono400, mono500].map(href => (
+  <link rel="preload" href={href} as="font" type="font/woff2" crossorigin="anonymous" />
+))}

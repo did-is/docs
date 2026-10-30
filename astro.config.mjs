@@ -64,14 +64,11 @@ export default defineConfig({
       lastUpdated: false,
       favicon: '/favicon.ico',
       customCss: [
-        '@fontsource/geist-sans/400.css',
-        '@fontsource/geist-sans/500.css',
-        '@fontsource/geist-sans/600.css',
-        '@fontsource/geist-mono/400.css',
-        '@fontsource/geist-mono/500.css',
+        './src/styles/fonts.css',
         './src/styles/custom.css',
       ],
       components: {
+        Head: './src/components/Head.astro',
         TableOfContents: './src/components/TableOfContents.astro',
       },
       head: [
