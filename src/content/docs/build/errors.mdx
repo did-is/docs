@@ -6,7 +6,7 @@ description: RFC 9457 problem responses, stable error codes, HTTP status mapping
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-When a request cannot be answered, DID.is returns an **RFC 9457 problem object** instead of a result. It has `Content-Type: application/problem+json` and a stable `code`, such as `METHOD_NOT_SUPPORTED` or `RATE_LIMITED`. Use `code` in your logic, not `title` or `detail`.
+For the native JSON HTTP API, a request that cannot be answered returns an **RFC 9457 problem object** instead of a result. This top-level response has `Content-Type: application/problem+json` and a stable `code`, such as `METHOD_NOT_SUPPORTED` or `RATE_LIMITED`. Use `code` in your logic, not `title` or `detail`.
 
 A problem means DID.is **could not produce an answer**. It is not a verdict about the identifier. A credential that fails its checks, or a policy rule that fails, is a normal `200` result, not an error.
 
@@ -19,6 +19,17 @@ A problem means DID.is **could not produce an answer**. It is not a verdict abou
   to={{ icon: 'team', title: 'Your client' }}
   result={{ tone: 'bad', text: 'code + status (+ Retry-After)' }}
 />
+
+## Error formats by transport
+
+Do not assume every DID.is response has a top-level problem body:
+
+| Transport | Where to read the error |
+| --- | --- |
+| Native JSON HTTP API | A top-level problem object with `Content-Type: application/problem+json`. |
+| [W3C DID Resolution binding](/reference/api/#w3c-did-resolution-cr-draft) | An outer `application/did-resolution` result with the problem in `didResolutionMetadata.error`, not a top-level problem body. |
+| [SSE](/build/stream/) | After the stream starts, an `error` event carries the problem as event data in `text/event-stream`. A refusal before streaming uses a normal HTTP problem response. |
+| Hosted MCP | Protocol failures use JSON-RPC `error`; tool failures use a result with `isError: true` and structured details. Do not parse them as top-level RFC 9457 responses. |
 
 ## What a problem tells you
 
@@ -108,7 +119,7 @@ A request that runs longer than 45 seconds is ended with `408`.
 
 ### W3C endpoint
 
-`/1.0/identifiers/{did}` follows the DID Resolution specification instead: 400 for invalid DIDs, DID URLs and options, 404 not found, 406 representation not supported, 410 for a deactivated DID, 501 method or feature not supported, and 500 for every other error. The problem object is in `didResolutionMetadata.error`.
+`/1.0/identifiers/{did}` follows the DID Resolution specification instead: 400 for invalid DIDs, DID URLs and options, 404 not found, 406 representation not supported, 410 for a deactivated DID, 501 method or feature not supported, and 500 for every other error. The response has `Content-Type: application/did-resolution`: an outer DID Resolution result contains the problem object in `didResolutionMetadata.error`. It is not a top-level `application/problem+json` body.
 
 ## Rate limits
 

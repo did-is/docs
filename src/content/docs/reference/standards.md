@@ -11,7 +11,7 @@ As of 23 October 2026. Specification lifecycle is separate from implementation s
 | --- | --- |
 | [W3C DID Core 1.0](https://www.w3.org/TR/2022/REC-did-core-20220719/) — Recommendation, 19 July 2022 | Implemented: DID syntax, documents and verification relationships within the registry scope. |
 | [W3C DID 1.1](https://www.w3.org/TR/2026/CR-did-1.1-20260305/) — Candidate Recommendation Snapshot, 05 March 2026 | Partial: shared syntax and document-model subset; not full DID 1.1 conformance. |
-| W3C DID Resolution v1 (Candidate Recommendation Draft), HTTPS binding | `/1.0/identifiers/{did}`: content negotiation, RFC 9457 errors, the specification's status codes, 410 for deactivated DIDs, DID URL dereferencing. |
+| W3C DID Resolution v1 (Candidate Recommendation Draft), HTTPS binding | `/1.0/identifiers/{did}`: content negotiation, an outer `application/did-resolution` result with RFC 9457 problems in `didResolutionMetadata.error`, the specification's status codes, 410 for deactivated DIDs, DID URL dereferencing. |
 | `did:key` (W3C CCG, v0.9) | Supported. See [DID methods](/reference/did-methods/). |
 | `did:jwk` (DIF) | Supported. |
 | `did:web` (W3C CCG) | Supported. |
@@ -36,7 +36,7 @@ Other DID methods return `501 METHOD_NOT_SUPPORTED`.
 | JOSE algorithms | `EdDSA`, `ES256`, `ES256K`. `none`, `crit` and `b64: false` are refused. |
 | W3C Bitstring Status List v1.0 | Supported, single-bit entries. StatusList2021 entries are also read. See [Status lists](/reference/status-lists/). |
 | RFC 8785 JSON Canonicalization Scheme | Used for Data Integrity, `did:webvh` and fingerprints. See [JSON canonicalization](/reference/jcs/). |
-| RFC 9457 Problem Details | Every API error. |
+| RFC 9457 Problem Details | Native JSON HTTP API error bodies; W3C resolution errors wrap the problem in `didResolutionMetadata.error`, and SSE carries it in an `error` event after streaming starts. Hosted MCP uses JSON-RPC or tool-result errors instead. See [Error formats by transport](/build/errors/#error-formats-by-transport). |
 
 JSON-LD `@context` values are never fetched remotely; DID.is uses an offline catalogue of known contexts.
 

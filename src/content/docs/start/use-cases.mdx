@@ -82,7 +82,7 @@ Accept only `VALID`. `INDETERMINATE` means a check could not finish, for example
 
 <CaseDiagram
   label="Agent authorisation: a delegation chain is checked before a tool call"
-  from={{ icon: 'agent', title: 'AI agent', sub: 'wants payments.refund' }}
+  from={{ icon: 'agent', title: 'AI agent', sub: 'wants payments:refund' }}
   sends="delegation chain"
   checks={['Every receipt is signed by the delegator', 'Chain starts at a root you trust', 'No link widens the permissions', 'Leaf allows this tool and has not expired']}
   to={{ icon: 'gateway', title: 'Tool gateway' }}
@@ -90,14 +90,14 @@ Accept only `VALID`. `INDETERMINATE` means a check could not finish, for example
 />
 
 <div class="proof-pair not-content">
-  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>Who delegated what to whom, link by link, back to <code>did:web:bank.example</code>.</li><li>Whether the agent's final permissions include <code>payments.refund</code>, with a reason when they do not.</li></ul></div>
+  <div class="pp-yes"><h4>What the answer shows</h4><ul><li>Who delegated what to whom, link by link, back to <code>did:web:bank.example</code>.</li><li>Whether the agent's final permissions include <code>payments:refund</code>, with a reason when they do not.</li></ul></div>
   <div class="pp-no"><h4>What it does not show</h4><ul><li>That the agent will behave within its permissions.</li><li>That the refund itself is correct. Delegation receipts are an experimental DID.is format, not a ratified standard.</li></ul></div>
 </div>
 
 ```bash
 curl -X POST https://did.is/api/v1/agents/authorize \
   -H 'content-type: application/json' \
-  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments.refund","trustedRoots":["did:web:bank.example"]}'
+  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments:refund","trustedRoots":["did:web:bank.example"]}'
 ```
 
 An empty or broken chain is always denied: `{"decision":"DENY","reason":"A chain must contain between 1 and 8 receipts."}`. See [Authorise a tool call](/build/agents/#authorise-a-tool-call).

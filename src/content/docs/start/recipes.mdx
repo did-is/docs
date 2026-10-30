@@ -133,14 +133,14 @@ else:
 
 ## Allow an agent's tool call
 
-**Task.** An AI agent wants to call `payments.refund`. Allow it only if a chain of signed delegation receipts leads back to an organization you trust.
+**Task.** An AI agent wants to call `payments:refund`. Allow it only if a chain of signed delegation receipts leads back to an organization you trust.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
 ```bash
 curl -s -X POST https://did.is/api/v1/agents/authorize \
   -H 'content-type: application/json' \
-  -d '{"chain": ["<root receipt>", "<leaf receipt>"], "tool": "payments.refund", "trustedRoots": ["did:web:bank.example"]}' \
+  -d '{"chain": ["<root receipt>", "<leaf receipt>"], "tool": "payments:refund", "trustedRoots": ["did:web:bank.example"]}' \
   | jq '.authorization | {decision, reason}'
 ```
 </TabItem>
@@ -176,4 +176,4 @@ Call it before the tool runs and stop on anything other than `ALLOW`. An empty o
 
 ## When something goes wrong
 
-Every error is a problem object with a stable `code`. The SDKs raise `DidisError`; read `status`, `problem.code` and `problem.detail`. See [Errors and rate limits](/build/errors/) for every code.
+Native JSON HTTP API errors are problem objects with a stable `code`; W3C, SSE and MCP use different envelopes (see [Error formats by transport](/build/errors/#error-formats-by-transport)). The SDKs raise `DidisError`; read `status`, `problem.code` and `problem.detail`. See [Errors and rate limits](/build/errors/) for every code.

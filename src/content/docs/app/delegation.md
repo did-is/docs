@@ -14,7 +14,7 @@ Delegation Receipt v1 is a DID.is format, not a ratified standard. The full form
 Open [did.is/agents](https://did.is/agents) and choose the **Delegation** tab.
 
 1. Paste the receipts (JWS strings), root first, as a JSON array or one per line.
-2. Enter the tool to authorise, for example `payments.refund`.
+2. Enter the tool to authorise, for example `payments:refund`.
 3. Choose **Authorise tool** for an ALLOW or DENY answer, or **Verify chain only** to see each link.
 
 **Generate signed demo chain** creates a sample chain so you can see a valid result.

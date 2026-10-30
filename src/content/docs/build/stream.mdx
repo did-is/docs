@@ -36,6 +36,7 @@ The final result is the **same resolution** as `/v1/resolve`. The stream adds ti
 
 - **Each stage** with `stage`, `label`, `status`, `startedUs`, `durationUs` and `detail`. The same stages appear in the `trace` array of `/v1/resolve`.
 - **The full resolution** in the `result` event, same shape as `/v1/resolve`.
+- **A problem** in the `error` event if resolution fails after streaming starts. The HTTP response remains `text/event-stream`, not `application/problem+json`; read the event data’s `code` and `status`.
 
 ## What it does not tell you
 

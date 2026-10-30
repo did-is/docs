@@ -11,7 +11,7 @@ When anyone resolves a public identifier, the public documents fetched and the c
 
 ## Usage statistics
 
-DID.is keeps per-project operation counts for plan allowances and aggregate service statistics (totals per endpoint and status). These aggregates do not contain IP addresses, identifiers you looked up, API keys, request bodies or user agents.
+DID.is keeps per-project operation counts, aggregated across a team for its shared plan allowances and aggregate service statistics (totals per endpoint and status). These aggregates do not contain IP addresses, identifiers you looked up, API keys, request bodies or user agents.
 
 To stop abuse, rate-limit counters are kept in memory per client. Sign-in and email endpoints keep short-lived counters keyed by IP address, deleted within a day.
 

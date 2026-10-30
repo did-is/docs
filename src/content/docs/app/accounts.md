@@ -9,18 +9,18 @@ The public API and web app need no account. Create an account at [did.is/account
 
 | Feature | What it does |
 | --- | --- |
-| **Projects** | Group keys, monitoring, webhooks and usage. Each project has its own plan. |
+| **Projects** | Group keys, monitoring, webhooks and usage. Projects in the same team share the team’s plan and monthly allowance. |
 | **Project API keys** | Authenticate private API requests. A key is shown once, at creation; you can rotate it. Keep keys server-side and never ship them to browsers or mobile apps. |
 | **Private resolution** | Metered resolution that is never written to public observation history. Use it for identifiers that must not be disclosed. |
 | **Monitoring** | Hourly checks of identifiers you choose, with signed webhooks on changes. See [Monitoring and webhooks](/app/monitoring/). |
-| **Team members** | Invite people to a project by email and assign roles. |
+| **Team members** | Invite people to a team by email and assign roles; membership applies across its projects. |
 | **Control claims** | Prove you control a DID (key signature, `/.well-known/did-is-claim.txt` or a `_didis-claim` DNS TXT record), then optionally list it in the [public directory](https://did.is/discover). Claims are free and valid for 90 days. |
 
 The private API is documented in the console. It is separate from the [public API](/build/api-overview/) described on this site.
 
 ## Plans
 
-Plans are Free, Pro, Max and Enterprise. Allowances and prices are on [did.is/pricing](https://did.is/pricing). Payments are handled by Stripe; see the [refund policy](https://did.is/legal/refunds).
+Plans belong to teams, not individual projects. Upgrading a team applies the plan to every project in it; separate teams have separate plans and allowances. Plans are Free, Pro, Max and Enterprise. Allowances and prices are on [did.is/pricing](https://did.is/pricing). Payments are handled by Stripe; see the [refund policy](https://did.is/legal/refunds).
 
 ## Usage and alerts
 

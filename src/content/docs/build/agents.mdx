@@ -56,7 +56,7 @@ The intensive budget is 10 requests per minute, the standard budget 20. See [Err
 ```bash
 curl -X POST https://did.is/api/v1/agents/authorize \
   -H 'content-type: application/json' \
-  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments.refund","trustedRoots":["did:web:bank.example"]}'
+  -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments:refund","trustedRoots":["did:web:bank.example"]}'
 ```
 </TabItem>
 <TabItem label="TypeScript">
@@ -64,7 +64,7 @@ curl -X POST https://did.is/api/v1/agents/authorize \
 import { DidisClient } from "@didis/client";
 
 const didis = new DidisClient();
-const { authorization } = await didis.authorize(chain, "payments.refund", {
+const { authorization } = await didis.authorize(chain, "payments:refund", {
   trustedRoots: ["did:web:bank.example"],
 });
 if (authorization.decision !== "ALLOW") throw new Error(authorization.reason);
@@ -75,20 +75,20 @@ if (authorization.decision !== "ALLOW") throw new Error(authorization.reason);
 from didis import DidisClient
 
 with DidisClient() as didis:
-    res = didis.authorize(chain, "payments.refund", trusted_roots=["did:web:bank.example"])
+    res = didis.authorize(chain, "payments:refund", trusted_roots=["did:web:bank.example"])
     if res["authorization"]["decision"] != "ALLOW":
         raise PermissionError(res["authorization"]["reason"])
 ```
 </TabItem>
 </Tabs>
 
-Replace the placeholders with real receipt JWS strings. The response has an `authorization` object (`agent`, `tool`, `decision`, `authorized`, `reason`, and when a capability matched, `matchedCapability`, `root` and `expires`) and the full `chain` result.
+Replace the placeholders with real receipt JWS strings. These examples request the capability `payments:refund`: a leaf grant of `payments:*` covers it, but not `refund` or `payments.refund`. MCP-facing tool names are separate; [map them to capabilities](/build/guard-tools/#capabilities-and-tool-names) in your guard. The response has an `authorization` object (`agent`, `tool`, `decision`, `authorized`, `reason`, and when a capability matched, `matchedCapability`, `root` and `expires`) and the full `chain` result.
 
 ## Reading the result
 
 | Result | What it means | What to do |
 | --- | --- | --- |
-| `ALLOW` | The chain is `VALID` and a leaf capability grants the tool. `reason` names it, for example `capability 'payments:*' grants 'refund'`. | Let the call through. |
+| `ALLOW` | The chain is `VALID` and a leaf capability grants the tool. `reason` names it, for example `capability 'payments:*' grants 'payments:refund'`. | Let the call through. |
 | `DENY`, scope violation | The chain is valid, but no capability grants this tool. | Refuse the call. |
 | `DENY`, chain not valid | The chain is `INVALID`, `INDETERMINATE` or `MALFORMED`; `reason` is the chain headline. | Refuse the call. |
 | `DENY`, nothing registered | `verify-tool` only: no `VALID` chain is registered for this agent. | Register a chain, or use `authorize`. |
