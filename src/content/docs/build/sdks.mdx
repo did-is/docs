@@ -159,7 +159,7 @@ with DidisClient(api_key=os.environ["DID_IS_API_KEY"]) as didis:
 - **Keep the key server-side.** Read it from an environment variable or a secret store. Never put it in browser or mobile code.
 - **No double billing.** Each call carries a fresh idempotency key, and the automatic retries reuse it, so a retried request is counted once.
 - **`usage()`** returns this month's allowance for the whole team (all projects share it): `period`, plus `Used`, `Reserved`, `Limit` and `Remaining` for the `standard` and `expensive` pools. It needs a key and is not counted.
-- **When the allowance is used up,** these calls raise `DidisError` with status `429` and code `QUOTA_EXHAUSTED` until the next month or a plan change. Retrying does not help. Remove the key to fall back to the anonymous public API.
+- **When the allowance is used up,** these calls raise `DidisError` with status `429` and code `QUOTA_EXHAUSTED` until the next month or a plan change. Retrying does not help. Do not silently fall back to the anonymous public API: it has different disclosure and storage boundaries. Choose public processing explicitly only when suitable for the input.
 
 The team's owners also get an email at 80% and at 100% of each monthly allowance (see [Accounts, projects and plans](/app/accounts/#usage-and-alerts)).
 
