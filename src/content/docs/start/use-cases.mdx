@@ -1,11 +1,39 @@
 ---
 title: Use cases
-description: Six everyday situations where DID.is answers a concrete question, with what it proves, what it does not, and the request to make.
+description: Three reproducible DID, credential and agent workflows, plus six integration illustrations, with concrete requests, failure decisions and evidence limits.
 ---
 
 import CaseDiagram from '../../../components/CaseDiagram.astro';
 
-DID.is answers one kind of question: **"What can actually be shown about this identifier, credential or agent, and what cannot?"** The six situations below show where that question comes up. Each one lists what DID.is checks, what the answer proves, what it leaves for you to decide, and the request to make.
+DID.is answers one kind of question: **"What can actually be shown about this identifier, credential or agent, and what cannot?"** Start with the three reproducible workflows below. The six situations afterward are **integration illustrations, not customer deployments**: domains, actors and diagram verdicts are synthetic or illustrative. They describe possible uses, not measured results or continuously live checks.
+
+## Reproducible workflows
+
+**Evidence key:** **A** = exact example programs executed against the current local engine over real HTTP on 2026-10-31 UTC; **B** = the stored result of that run, not a live result; **C** = illustration or a placeholder not executed. [First recipes](/start/recipes/#prerequisites-and-evidence-labels) contains the prerequisites, input generator and all nine curl / TypeScript / Python programs, tested with published SDK 0.2.5. No production POST, paid route, account, email or payment was used for that verification.
+
+### Inspect a key-only DID before integration
+
+- **User job and input:** a developer needs a reproducible identifier to test document and evidence handling. Use `did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2`; it is a curated key-only fixture, not a partner's identity.
+- **Prerequisites and steps:** choose your API base, then run [the resolution recipe](/start/recipes/#accept-a-partners-did). It calls `GET /v1/resolve/{did}`; compare `didDocument.id` to the input and inspect `verdict`, `dimensions` and `evidence.source` instead of treating HTTP 200 as trust.
+- **Expected fields (B):** `verdict.outcome: RESOLVED`, source `LOCAL_DERIVATION`, integrity `SELF_CERTIFYING`, origin `NOT_APPLICABLE`, organization `NOT_ESTABLISHED`. The API was contacted; no website was fetched to derive this DID.
+- **Decision and boundary:** usable key material is evidence for technical integration, not business approval. Stop if resolution fails; require your own issuer/domain policy when the job needs it. Derivation does not test private-key possession, legal identity or domain ownership. A key-only DID cannot satisfy a required website binding and cannot rotate its key.
+- **Access:** free public GET, no account/key. Paid allowances and production availability were not tested.
+
+### Separate signed credential claims from tampering
+
+- **User job and input:** an integrator tests whether an age-claim gate accepts signed evidence and refuses edits. [Generate fresh synthetic inputs](/start/recipes/#generate-the-synthetic-inputs): a signed VC-JWT 1.1, the same payload changed without re-signing, and an unsupported RDF-proof illustration.
+- **Prerequisites and steps:** Node's built-in Ed25519 signer creates temporary keys and three request files; run [the credential recipe](/start/recipes/#accept-a-credential) against `POST /v1/credentials/verify` with `requiredClaims: [{"path":"/credentialSubject/age_over_18","equals":true}]`.
+- **Expected fields (B):** signed → `VALID`, `requirements.met: true`, `SATISFIED`; tampered → `INVALID`; unsupported → `UNSUPPORTED`. Compare signature checks and requirements, not the unverified payload. The unsupported proof is deliberately illustrative, not a valid RDF signature.
+- **Decision and boundary:** accept only `VALID` plus satisfied requirements and your own issuer/status policy. The synthetic issuer claims an age; this does not establish a person's age or that the issuer is authoritative. Revocation is `SKIP`: no status mechanism was declared, so the example does not establish non-revocation. Unknown, missing or indeterminate evidence is not a pass.
+- **Access:** free public POST, no account/key. Synthetic verification does not issue a real credential or prove customer onboarding.
+
+### Deny a tool call outside a selected delegation
+
+- **User job and input:** a gateway developer tests a fail-closed authorization decision before wiring a tool. Fresh generated inputs contain one signed receipt for `payments:refund`, a wrong tool, a root outside the chosen allowlist and an empty chain.
+- **Prerequisites and steps:** regenerate after one hour; run [the agent recipe](/start/recipes/#allow-an-agents-tool-call) against `POST /v1/agents/authorize`. Pass explicit `trustedRoots`; inspect the authorization and the verified chain before any action.
+- **Expected fields (B):** valid scoped receipt → `ALLOW`, `authorized: true`, `chain.status: VALID`, `trustedRoot: true` and one signature-verified link; wrong tool, untrusted root and empty chain → `DENY`, `authorized: false`.
+- **Decision and boundary:** do not run the tool on denial, timeout, HTTP error or an unknown verdict. A resolvable root is not automatically trusted. This verifies a one-link synthetic delegation, not agent behavior, multi-link attenuation, replay prevention or refund correctness. Receipts are experimental, not a ratified standard; no tool or payment is invoked.
+- **Access:** free public POST, no account/key; no receipt registration. Paid routes, real gateways and billing are outside the evidence.
 
 ## A plain-language picture
 
@@ -27,7 +55,7 @@ DID.is is the **inspector who reads the card and writes down what was checked**:
 **Situation.** A supplier sends you its identifier, `did:web:supplier.example`, and asks you to accept invoices signed with it. Before you add it to your systems, you want to know that the identifier is published from the supplier's own domain and that its keys are usable.
 
 <CaseDiagram
-  label="Partner check: a supplier's DID is resolved and evaluated against your policy"
+  label="Illustration, not a live result: Partner check: a supplier's DID is resolved and evaluated against your policy"
   from={{ icon: 'building', title: 'Supplier', sub: 'did:web:supplier.example' }}
   sends="DID"
   checks={['Document fetched over trusted TLS', 'Website links back to the DID', 'Keys well-formed and usable', 'Your rules: method, binding, certificate']}
@@ -48,14 +76,14 @@ curl -X POST https://did.is/api/v1/policies/evaluate \
   -d '{"did":"did:web:did.is","policy":{"name":"partner-onboarding","rules":{"didResolution":"required","allowedMethods":["web","webvh"],"domainBinding":"required","tlsMinDaysRemaining":14}}}'
 ```
 
-For `did:web:did.is` this returns `PASS` with "All 4 evaluated rules pass." See [Policies](/build/policies/#rules) for every rule.
+**C — not executed here:** this is an illustrative hosted request, not a stored successful partner check. Its outcome depends on current domain evidence and certificate dates; accept only a current `PASS` under rules you chose. See [Policies](/build/policies/#rules) for every rule.
 
 ## Verify a digital certificate
 
 **Situation.** A candidate sends a digital diploma as a W3C verifiable credential. You want to know whether the university's key really signed it, whether it is within its validity dates, and whether the university has revoked it.
 
 <CaseDiagram
-  label="Credential check: a candidate's credential is verified against its issuer"
+  label="Illustration, not a live result: Credential check: a candidate's credential is verified against its issuer"
   from={{ icon: 'person', title: 'Candidate', sub: 'presents a credential' }}
   sends="credential"
   checks={["Issuer's DID resolves", "Signature matches the issuer's key", 'Validity dates include today', 'Revocation status list is clear']}
@@ -74,14 +102,14 @@ curl -X POST https://did.is/api/v1/credentials/verify \
   -d '{"credential": { … }}'
 ```
 
-Accept only `VALID`. `INDETERMINATE` means a check could not finish, for example an unreachable status list, and is not a pass. See [Credentials](/build/credentials/#overall-status).
+**C — the ellipsis is a placeholder, not runnable JSON.** Replace it with a supported credential. `VALID` must also meet your issuer and status policy; a credential without a status mechanism may have a skipped revocation check. `INDETERMINATE` means a check could not finish, for example an unreachable status list, and is not a pass. See [Credentials](/build/credentials/#overall-status).
 
 ## Let an AI agent act only with permission
 
 **Situation.** A bank lets a customer-service AI agent issue refunds. The bank delegated that right to a vendor, and the vendor delegated it to the agent. Before the refund tool runs, your gateway needs to confirm the chain of permission really leads back to the bank.
 
 <CaseDiagram
-  label="Agent authorisation: a delegation chain is checked before a tool call"
+  label="Illustration, not a live result: Agent authorisation: a delegation chain is checked before a tool call"
   from={{ icon: 'agent', title: 'AI agent', sub: 'wants payments:refund' }}
   sends="delegation chain"
   checks={['Every receipt is signed by the delegator', 'Chain starts at a root you trust', 'No link widens the permissions', 'Leaf allows this tool and has not expired']}
@@ -100,14 +128,14 @@ curl -X POST https://did.is/api/v1/agents/authorize \
   -d '{"chain":["<root receipt>","<leaf receipt>"],"tool":"payments:refund","trustedRoots":["did:web:bank.example"]}'
 ```
 
-An empty or broken chain is always denied: `{"decision":"DENY","reason":"A chain must contain between 1 and 8 receipts."}`. See [Authorise a tool call](/build/agents/#authorise-a-tool-call).
+**C — replace the receipt placeholders before use.** An empty chain returns `authorization.decision: DENY` with the reason "A chain must contain between 1 and 8 receipts." A broken chain is also denied, with its own reason. See [Authorise a tool call](/build/agents/#authorise-a-tool-call).
 
 ## Review an MCP server before connecting
 
 **Situation.** Your team wants to connect an assistant to a third-party MCP server. You want to see which tools it exposes before approving it, and you want to notice if those tools change after you approved them.
 
 <CaseDiagram
-  label="MCP review: a server's tools are listed, fingerprinted and compared over time"
+  label="Illustration, not a live result: MCP review: a server's tools are listed, fingerprinted and compared over time"
   from={{ icon: 'server', title: 'MCP server', sub: 'mcp.deepwiki.com' }}
   sends="tool list"
   checks={['Every tool listed', 'Each definition fingerprinted', 'Read-only or side effects, estimated', 'Compared with the last observation']}
@@ -124,14 +152,14 @@ An empty or broken chain is always denied: `{"decision":"DENY","reason":"A chain
 curl 'https://did.is/api/v1/mcp/inspect?endpoint=https://mcp.deepwiki.com/mcp'
 ```
 
-Store the fingerprints of the tools you approve. If one changes, review it again. See [Inspect an MCP server](/build/agents/#inspect-an-mcp-server).
+**C — not executed here:** the server and diagram drift verdict illustrate the workflow; this page does not store a current server inspection. Store the fingerprints of the tools you approve. If one changes, review it again. See [Inspect an MCP server](/build/agents/#inspect-an-mcp-server).
 
 ## Get told when an identifier changes
 
 **Situation.** Your product accepts signatures from a few dozen partner DIDs. If one of them rotates its keys, loses its domain binding or stops resolving, you want to know within the hour rather than when a customer complains.
 
 <CaseDiagram
-  label="Monitoring: watched identifiers are checked hourly and changes are sent as signed webhooks"
+  label="Illustration, not a live result: Monitoring: watched identifiers are checked hourly and changes are sent as signed webhooks"
   from={{ icon: 'globe', title: 'Watched DIDs', sub: 'chosen in the console' }}
   sends="hourly check"
   checks={['Document hash compared', 'Domain binding compared', 'Resolution failures and recoveries', 'Signed event on any change']}
@@ -151,7 +179,7 @@ Identifier monitoring requires a Pro or Max team (5 or 25 active watches per tea
 **Situation.** Partners call your API with requests signed as compact JWS, with their DID in the `kid` header. Your gateway needs a fast yes or no on every request.
 
 <CaseDiagram
-  label="Gateway check: a signed request is verified against the key in the sender's DID"
+  label="Illustration, not a live result: Gateway check: a signed request is verified against the key in the sender's DID"
   from={{ icon: 'building', title: 'Partner app', sub: 'signed request' }}
   sends="JWS"
   checks={["Sender's DID resolved", 'Key is in the DID document', 'Key is allowed to sign', 'Signature verifies']}
@@ -170,7 +198,7 @@ curl -X POST https://did.is/api/v1/fast-verify/jws \
   -d '{"jws":"eyJhbG…"}'
 ```
 
-Uses the standard budget (20 requests per minute). For a compact verdict on a DID alone, use `GET /v1/fast-verify/did/{did}`. See [Verify a JWS against a DID](/reference/api/#verify-a-jws-against-a-did).
+**C — the shortened JWS is a placeholder, not an executed signature check.** Replace it with a real compact JWS. Uses the standard budget (20 requests per minute). For a compact verdict on a DID alone, use `GET /v1/fast-verify/did/{did}`. See [Verify a JWS against a DID](/reference/api/#verify-a-jws-against-a-did).
 
 ## Next steps
 

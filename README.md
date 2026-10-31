@@ -157,6 +157,20 @@ Contributions must adhere to the following standards:
 
 After changing public operation statuses, rate limits or monitoring plans, run `npm run check:source -- <service-checkout>` with a trusted local service checkout (Node 24 or later). This offline, read-only check evaluates the service’s actual OpenAPI generator and compares all documented operation statuses and budgets. It also checks the rate limiter, retry delay, team watch limits, monitoring method allowlist and separate scheduled MCP availability contract against service source. Source hashes are printed for evidence; no API requests are made. `npm run check` includes documentation regressions and mutation tests without requiring that checkout. Source structure changes fail for review rather than silently skipping checks.
 
+## Reproducible recipe maintenance
+
+The three workflows on `start/recipes` are extracted from their named code fences, not duplicated in a test implementation. `npm run check` executes the copied built-in-crypto input generator and verifies its signatures and tampered variants. The opt-in `npm run check:recipes -- --help` integration gate runs all nine copied curl, TypeScript and Python programs against a freshly built engine on isolated local HTTP servers, with default egress protection and public limits. It never calls production or alters the service source.
+
+Prepare an ignored evidence directory containing `npm-metadata.json`, `pypi-metadata.json`, the published `client-0.2.5.tgz` and `didis_py-0.2.5-py3-none-any.whl`. Extract those packages into `<runtime>/node_modules/@didis/client` and `<runtime>/python`, respectively. The gate verifies the archive integrity against the registry metadata and rejects other SDK versions. Supply a Python interpreter that already has the SDK's HTTP dependency, and freshly generated serializer evidence from the service's existing public contract test.
+
+```bash
+npm run check:recipes -- --core "$CURRENT_ENGINE_BINARY" \
+  --runtime "$PUBLISHED_SDK_RUNTIME" --python "$EXISTING_PYTHON" \
+  --evidence "$IGNORED_EVIDENCE_DIR" --serializers "$FRESH_SERIALIZER_DIR"
+```
+
+The output records the program and engine hashes, SDK artifact verification, actual response counts and fail-closed verdicts. Every server started by the gate is stopped afterward. Dates on the pages identify stored evidence, not an automatic promise that examples are continuously live. Preserve explicit prerequisites, synthetic-input labels, skipped revocation/audience limitations and the separation between free routes and paid allowances when updating examples.
+
 ## Evidence example maintenance
 
 Resolution observations remain dated captures, not fresh network checks. Their explanatory text is synchronized offline from the service's core-generated copy contract. Run the service's `scripts/docs/sync-evidence-copy.mjs` with this repository path after regenerating that contract. `npm run check` guards the captured origin proof text, self-certifying headline and DID 1.1 lifecycle label against regressions.

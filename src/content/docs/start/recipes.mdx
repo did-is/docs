@@ -1,179 +1,217 @@
 ---
 title: First recipes
-description: Three complete programs for common first tasks — accept a partner's DID, accept a credential, and allow an agent's tool call — in curl, TypeScript and Python.
+description: Reproduce DID resolution, credential checks and fail-closed agent authorization in curl, TypeScript and Python, with synthetic inputs and explicit evidence limits.
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-Each recipe is a whole program you can paste and run. None of them needs an account or an API key. Each one ends in a single yes-or-no decision, and shows what to do with every other answer.
+These are **three reproducible technical workflows**, not customer success stories. Read the matching [use cases](/start/use-cases/#reproducible-workflows) for the decision each one supports. There is no measured business outcome here.
 
-| You want to… | Call | Accept only |
-| --- | --- | --- |
-| [Accept a partner's DID](#accept-a-partners-did) | `POST /v1/policies/evaluate` | `PASS` |
-| [Accept a credential](#accept-a-credential) | `POST /v1/credentials/verify` | `requirements.met` (`VALID` and every condition `SATISFIED`) |
-| [Allow an agent's tool call](#allow-an-agents-tool-call) | `POST /v1/agents/authorize` | `ALLOW` |
+## Prerequisites and evidence labels
 
-The SDKs (`@didis/client` 0.2.4 and `didis-py` 0.2.4 or later) wait and retry automatically when the free rate limit answers `429`, so these programs also work in a loop. With curl, wait for the number of seconds in `Retry-After` before sending again.
+- Use a fresh working directory, Node.js 24 or newer, curl and Python 3.10 or newer. No account or API key is needed for these public API routes.
+- For the TypeScript tabs, install **published `@didis/client` 0.2.5** (`npm install @didis/client@0.2.5`); for Python, install **published `didis-py` 0.2.5** (`python -m pip install didis-py==0.2.5`). Save each tab under the filename shown. Run TypeScript with `node resolve.ts`, `node credential.ts` or `node authorize.ts`; Python with `python resolve.py`, `python credential.py` or `python authorize.py`. These examples do not use unpublished SDK fields.
+- Set `BASE` to the API base URL you intend to call, including `/api` for the hosted service: `export BASE='https://did.is/api'`. Programs refuse to run if it is missing. A successful HTTP response is not an acceptance decision.
+- **A — executed:** these exact example programs were run against the current local engine over real HTTP on 2026-10-31 UTC, with the published SDK artifacts. This is not a production availability test or a paid API test.
+- **B — stored snapshot:** expected fields below describe that dated run, not a continuously live result. Times, generated DIDs, digests and latency will differ when you repeat it.
+- **C — illustration / not run:** business domains and diagrams on the use-case page illustrate integration ideas. They are not customers or evidence of successful onboarding, payments or monitoring.
+
+Public requests use the free per-client budget: **20 requests/minute standard; intensive requests also consume a separate 10 requests/minute budget**. The SDKs retry `429` according to `Retry-After`; curl does not automatically retry here. Wait the returned seconds before repeating. [Paid API keys](/app/accounts/) use team allowances and different routes; these recipes exercise neither paid entitlements nor billing.
+
+## Generate the synthetic inputs
+
+Save as `make-inputs.mjs`, then run `node make-inputs.mjs` before the credential and agent recipes. It uses only Node's built-in cryptography. New Ed25519 keys stay in memory; seven JSON request files are written. Regenerate after one hour (the signed inputs expire). **Never use these synthetic claims or receipts as real authorization.**
+
+```js title="make-inputs.mjs"
+import { generateKeyPairSync, sign } from "node:crypto";
+import { writeFileSync } from "node:fs";
+
+const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+const makeKey = () => {
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const jwk = publicKey.export({ format: "jwk" });
+  const did = `did:jwk:${encode(jwk)}`;
+  return { privateKey, did, kid: `${did}#0` };
+};
+const root = makeKey();
+const agent = makeKey();
+const now = Math.floor(Date.now() / 1000);
+const jwt = (header, payload) => {
+  const input = `${encode(header)}.${encode(payload)}`;
+  return `${input}.${sign(null, Buffer.from(input), root.privateKey).toString("base64url")}`;
+};
+const payload = {
+  iss: root.did, sub: agent.did, nbf: now - 60, exp: now + 3600,
+  jti: "urn:uuid:0c535b28-c8ca-4a8d-8f8e-0cad21b56b77",
+  vc: { "@context": ["https://www.w3.org/2018/credentials/v1"],
+    type: ["VerifiableCredential"], credentialSubject: { age_over_18: true } },
+};
+const valid = jwt({ alg: "EdDSA", typ: "JWT", kid: root.kid }, payload);
+const parts = valid.split(".");
+// Change an issuer-signed claim WITHOUT re-signing: the signature must fail.
+parts[1] = encode({ ...payload, vc: { ...payload.vc, credentialSubject: { age_over_18: false } } });
+const unsupported = {
+  "@context": ["https://www.w3.org/ns/credentials/v2"], type: ["VerifiableCredential"],
+  issuer: root.did, validFrom: new Date((now - 60) * 1000).toISOString(),
+  credentialSubject: { id: agent.did, age_over_18: true },
+  proof: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022",
+    verificationMethod: root.kid, proofPurpose: "assertionMethod", proofValue: "zUnsupportedExample" },
+};
+const requiredClaims = [{ path: "/credentialSubject/age_over_18", equals: true }];
+for (const [name, credential] of Object.entries({ valid, tampered: parts.join("."), unsupported })) {
+  writeFileSync(`${name}.json`, JSON.stringify({ credential, requiredClaims }));
+}
+const receipt = jwt({ alg: "EdDSA", typ: "didis-delegation+jwt", kid: root.kid }, {
+  iss: root.did, aud: agent.did, cap: ["payments:refund"], nbf: now - 60, exp: now + 3600,
+  jti: "synthetic-recipe-receipt",
+});
+const request = { chain: [receipt], tool: "payments:refund", trustedRoots: [root.did] };
+for (const [name, body] of Object.entries({
+  allow: request,
+  "wrong-tool": { ...request, tool: "payments:transfer" },
+  "untrusted-root": { ...request, trustedRoots: [agent.did] },
+  "empty-chain": { ...request, chain: [] },
+})) writeFileSync(`${name}.json`, JSON.stringify(body));
+console.log("Created seven synthetic request files; private keys were not saved.");
+```
+
+The valid credential is a signed VC-JWT 1.1 with a synthetic age claim and **no revocation mechanism**. The tampered copy changes that claim without re-signing. The unsupported JSON input is deliberately not a valid signed credential: its proof value is an illustration, and its RDF cryptosuite is outside the supported verifier. This tests honest refusal, not RDF verification.
 
 ## Accept a partner's DID
 
-**Task.** A supplier gives you `did:web:supplier.example`. Accept it only if it is published from its own domain over a valid certificate and its website links back to it.
+**Job:** inspect an identifier before adding signature support to your integration. **Input:** the curated public `did:key` below; it is not a business partner. **Endpoint:** `GET /v1/resolve/{did}`. This self-certifying method derives its document without contacting an identifier's website; the client still makes an HTTP request to the API.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
-```bash
-curl -s -X POST https://did.is/api/v1/policies/evaluate \
-  -H 'content-type: application/json' \
-  -d '{"did":"did:web:did.is","policy":{"name":"partner","rules":{"didResolution":"required","allowedMethods":["web","webvh"],"domainBinding":"required","tlsMinDaysRemaining":14}}}' \
-  | jq '{status: .evaluation.status, headline: .evaluation.headline, failed: [.evaluation.evaluations[] | select(.status != "PASS") | .message]}'
+```bash title="resolve.sh"
+set -eu
+: "${BASE:?Set BASE to your intended API base URL}"
+curl --fail-with-body --silent --show-error --max-time 30 \
+  "$BASE/v1/resolve/did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2"
 ```
 </TabItem>
 <TabItem label="TypeScript">
-```ts
+```ts title="resolve.ts"
 import { DidisClient } from "@didis/client";
-
-const didis = new DidisClient();
-const { evaluation } = await didis.evaluatePolicy("did:web:did.is", {
-  name: "partner",
-  rules: { didResolution: "required", allowedMethods: ["web", "webvh"], domainBinding: "required", tlsMinDaysRemaining: 14 },
-});
-
-if (evaluation.status === "PASS") {
-  console.log("Accept:", evaluation.headline);
-} else {
-  // FAIL: a rule is not met. INDETERMINATE: a check could not finish — not a pass.
-  console.log("Do not accept:", evaluation.status);
-  for (const e of evaluation.evaluations) if (e.status !== "PASS") console.log("-", e.rule, e.message);
-}
+const baseUrl = process.env.BASE;
+if (!baseUrl) throw new Error("Set BASE to your intended API base URL");
+const didis = new DidisClient({ baseUrl });
+const r = await didis.resolve("did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2");
+console.log(JSON.stringify(r));
 ```
 </TabItem>
 <TabItem label="Python">
-```python
+```python title="resolve.py"
+import json, os
 from didis import DidisClient
-
-with DidisClient() as didis:
-    evaluation = didis.evaluate_policy("did:web:did.is", {
-        "name": "partner",
-        "rules": {"didResolution": "required", "allowedMethods": ["web", "webvh"], "domainBinding": "required", "tlsMinDaysRemaining": 14},
-    })["evaluation"]
-
-if evaluation["status"] == "PASS":
-    print("Accept:", evaluation["headline"])
-else:
-    # FAIL: a rule is not met. INDETERMINATE: a check could not finish — not a pass.
-    print("Do not accept:", evaluation["status"])
-    for e in evaluation["evaluations"]:
-        if e["status"] != "PASS":
-            print("-", e["rule"], e["message"])
+with DidisClient(base_url=os.environ["BASE"]) as didis:
+    r = didis.resolve("did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2")
+print(json.dumps(r))
 ```
 </TabItem>
 </Tabs>
 
-Replace `did:web:did.is` with your partner's DID. A `PASS` shows the identifier is controlled from that domain; it does not show who owns the domain. More rules: [Policies](/build/policies/#rules).
+**Read the result:** `verdict.outcome` is `RESOLVED`; `didDocument.id` equals the input; `evidence.source.kind` is `LOCAL_DERIVATION`. The `integrity` dimension is `SELF_CERTIFYING`, while `origin` is `NOT_APPLICABLE` and `organization` is `NOT_ESTABLISHED`. This shows a derived document and usable key material, **not private-key possession, legal identity or domain ownership**. Reject unsupported methods or an unresolved identifier for integrations requiring resolution; never turn `RESOLVED` alone into a business-partner approval. For domain-based onboarding, use your own [policy rules](/build/policies/#rules) and a real partner's `did:web`, rather than expecting this key-only fixture to pass a domain-binding rule.
 
 ## Accept a credential
 
-**Task.** A user presents a verifiable credential. Accept it only if the issuer's key signed it, it is current and not revoked, and it states that the holder is over 18.
+**Job:** distinguish an issuer-signed claim from a merely presented one. **Input:** `valid.json`, `tampered.json`, `unsupported.json` generated above. **Endpoint:** `POST /v1/credentials/verify`. First generate the files; then run one tab. Each sends three requests, printing one JSON response per line.
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
-```bash
-curl -s -X POST https://did.is/api/v1/credentials/verify \
-  -H 'content-type: application/json' \
-  -d '{"credential": "<JWT, SD-JWT VC or JSON credential>", "requiredClaims": [{"path": "/age_over_18", "equals": true}]}' \
-  | jq '{status, headline, met: .requirements.met, requirements: .requirements.results}'
+```bash title="credential.sh"
+set -eu
+: "${BASE:?Set BASE to your intended API base URL}"
+for name in valid tampered unsupported; do
+  curl --fail-with-body --silent --show-error --max-time 30 \
+    -X POST "$BASE/v1/credentials/verify" -H 'content-type: application/json' \
+    --data-binary "@$name.json"
+  printf '\n'
+done
 ```
 </TabItem>
 <TabItem label="TypeScript">
-```ts
+```ts title="credential.ts"
+import { readFileSync } from "node:fs";
 import { DidisClient } from "@didis/client";
-
-const didis = new DidisClient();
-const credential = process.argv[2]; // the credential you received
-const r = await didis.verifyCredential(credential, {
-  requiredClaims: [{ path: "/age_over_18", equals: true }],
-});
-
-// requirements.met is true only when the credential is VALID and every condition is SATISFIED.
-if (r.requirements?.met) {
-  console.log("Accept:", r.headline);
-} else {
-  console.log("Do not accept:", r.status);
-  for (const c of r.checks) if (c.status === "FAIL" || c.status === "INDETERMINATE") console.log("-", c.label, c.detail);
-  for (const q of r.requirements?.results ?? []) if (q.result !== "SATISFIED") console.log("-", q.path, q.result);
+const baseUrl = process.env.BASE;
+if (!baseUrl) throw new Error("Set BASE to your intended API base URL");
+const didis = new DidisClient({ baseUrl });
+for (const name of ["valid", "tampered", "unsupported"]) {
+  const input = JSON.parse(readFileSync(`${name}.json`, "utf8"));
+  const r = await didis.verifyCredential(input.credential, { requiredClaims: input.requiredClaims });
+  const accept = r.status === "VALID" && r.requirements?.met === true;
+  console.log(JSON.stringify({ name, accept, result: r }));
 }
 ```
 </TabItem>
 <TabItem label="Python">
-```python
-import sys
+```python title="credential.py"
+import json, os
 from didis import DidisClient
-
-credential = sys.argv[1]  # the credential you received
-with DidisClient() as didis:
-    r = didis.verify_credential(credential, required_claims=[{"path": "/age_over_18", "equals": True}])
-
-# requirements["met"] is True only when the credential is VALID and every condition is SATISFIED.
-requirements = r.get("requirements") or {"met": False, "results": []}
-if requirements["met"]:
-    print("Accept:", r["headline"])
-else:
-    print("Do not accept:", r["status"])
-    for c in r["checks"]:
-        if c["status"] in ("FAIL", "INDETERMINATE"):
-            print("-", c["label"], c["detail"])
-    for q in requirements["results"]:
-        if q["result"] != "SATISFIED":
-            print("-", q["path"], q["result"])
+with DidisClient(base_url=os.environ["BASE"]) as didis:
+    for name in ["valid", "tampered", "unsupported"]:
+        with open(name + ".json", encoding="utf8") as f:
+            request = json.load(f)
+        r = didis.verify_credential(request["credential"], required_claims=request["requiredClaims"])
+        accept = r["status"] == "VALID" and (r.get("requirements") or {}).get("met") is True
+        print(json.dumps({"name": name, "accept": accept, "result": r}))
 ```
 </TabItem>
 </Tabs>
 
-`NOT_DISCLOSED` means the holder chose not to reveal that claim; ask again rather than reject outright. Claim values are never echoed back. Decide separately which issuers you accept. More: [Credentials](/build/credentials/).
+**Expected decisions (B):** `valid` → `VALID`, `requirements.met: true`, claim condition `SATISFIED`; `tampered` → `INVALID`, not accepted; `unsupported` → `UNSUPPORTED`, not accepted. In the valid result the signature check passes, but revocation is `SKIP` because no status mechanism was declared. **`VALID` does not mean “not revoked” in this fixture.** `/credentialSubject/age_over_18` is the claim path exposed by this VC-JWT profile, not a universally valid path for every credential. The condition checks a signed statement, not a person's actual age. No expected audience was supplied, and this example does not verify that a presenter controls the subject key. Decide separately which issuers and status policies you trust. `INDETERMINATE`, `NOT_DISCLOSED`, network errors and absent requirements are never a pass; request missing evidence or stop. See [Credentials](/build/credentials/#overall-status).
 
 ## Allow an agent's tool call
 
-**Task.** An AI agent wants to call `payments:refund`. Allow it only if a chain of signed delegation receipts leads back to an organization you trust.
+**Job:** stop a tool call unless a signed delegation from a root you selected allows it. **Input:** a fresh, one-link synthetic chain and three negative variants. **Endpoint:** `POST /v1/agents/authorize`. No tool is invoked, no receipt is registered and no refund occurs. First generate the files, then run one tab (four requests).
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
-```bash
-curl -s -X POST https://did.is/api/v1/agents/authorize \
-  -H 'content-type: application/json' \
-  -d '{"chain": ["<root receipt>", "<leaf receipt>"], "tool": "payments:refund", "trustedRoots": ["did:web:bank.example"]}' \
-  | jq '.authorization | {decision, reason}'
+```bash title="authorize.sh"
+set -eu
+: "${BASE:?Set BASE to your intended API base URL}"
+for name in allow wrong-tool untrusted-root empty-chain; do
+  curl --fail-with-body --silent --show-error --max-time 30 \
+    -X POST "$BASE/v1/agents/authorize" -H 'content-type: application/json' \
+    --data-binary "@$name.json"
+  printf '\n'
+done
 ```
 </TabItem>
 <TabItem label="TypeScript">
-```ts
+```ts title="authorize.ts"
+import { readFileSync } from "node:fs";
 import { DidisClient } from "@didis/client";
-
-const didis = new DidisClient();
-
-export async function allowTool(chain: string[], tool: string): Promise<boolean> {
-  const { authorization } = await didis.authorize(chain, tool, { trustedRoots: ["did:web:bank.example"] });
-  if (authorization.decision !== "ALLOW") console.warn("Denied:", authorization.reason);
-  return authorization.decision === "ALLOW";
+const baseUrl = process.env.BASE;
+if (!baseUrl) throw new Error("Set BASE to your intended API base URL");
+const didis = new DidisClient({ baseUrl });
+for (const name of ["allow", "wrong-tool", "untrusted-root", "empty-chain"]) {
+  const input = JSON.parse(readFileSync(`${name}.json`, "utf8"));
+  const r = await didis.authorize(input.chain, input.tool, { trustedRoots: input.trustedRoots });
+  const accept = r.authorization.decision === "ALLOW" && r.authorization.authorized === true;
+  console.log(JSON.stringify({ name, accept, result: r }));
 }
 ```
 </TabItem>
 <TabItem label="Python">
-```python
+```python title="authorize.py"
+import json, os
 from didis import DidisClient
-
-didis = DidisClient()
-
-def allow_tool(chain: list[str], tool: str) -> bool:
-    authorization = didis.authorize(chain, tool, trusted_roots=["did:web:bank.example"])["authorization"]
-    if authorization["decision"] != "ALLOW":
-        print("Denied:", authorization["reason"])
-    return authorization["decision"] == "ALLOW"
+with DidisClient(base_url=os.environ["BASE"]) as didis:
+    for name in ["allow", "wrong-tool", "untrusted-root", "empty-chain"]:
+        with open(name + ".json", encoding="utf8") as f:
+            request = json.load(f)
+        r = didis.authorize(request["chain"], request["tool"], trusted_roots=request["trustedRoots"])
+        verdict = r["authorization"]
+        accept = verdict["decision"] == "ALLOW" and verdict["authorized"] is True
+        print(json.dumps({"name": name, "accept": accept, "result": r}))
 ```
 </TabItem>
 </Tabs>
 
-Call it before the tool runs and stop on anything other than `ALLOW`. An empty or broken chain is always denied with a reason. Delegation receipts are an experimental DID.is format. To wrap tools automatically, see [Guard agent tools](/build/guard-tools/).
+**Expected decisions (B):** `allow` → `authorization.decision: ALLOW`, `chain.status: VALID`, `chain.trustedRoot: true`, one signature-verified link and `matchedCapability: payments:refund`. `wrong-tool`, `untrusted-root` and `empty-chain` → `DENY`, `authorized: false`. The root allowlist is essential: you chose it; resolving a DID does not make it trusted. This proves scoped delegation, **not safe agent behavior or the correctness of a refund**. Receipts are an experimental DID.is format, not a ratified standard. At your gateway, run the tool only after `ALLOW`; stop on denial, timeout, HTTP error or an unknown verdict. Regenerate expired inputs; multi-link attenuation, replay prevention and a real tool gateway are outside this one-link example. See [Authorise a tool call](/build/agents/#authorise-a-tool-call).
 
 ## When something goes wrong
 
-Native JSON HTTP API errors are problem objects with a stable `code`; W3C, SSE and MCP use different envelopes (see [Error formats by transport](/build/errors/#error-formats-by-transport)). The SDKs raise `DidisError`; read `status`, `problem.code` and `problem.detail`. See [Errors and rate limits](/build/errors/) for every code.
+The curl tabs print full responses; apply the same fail-closed decisions described above before invoking any application action. Native JSON HTTP API errors are problem objects with a stable `code`; W3C, SSE and MCP use different envelopes (see [Error formats by transport](/build/errors/#error-formats-by-transport)). The SDKs raise `DidisError`; read `status`, `problem.code` and `problem.detail`. An exception aborts these programs without an acceptance result. See [Errors and rate limits](/build/errors/) for every code.

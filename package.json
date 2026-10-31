@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "node --test scripts/*.test.mjs && node scripts/check-docs.mjs",
-    "check:source": "node scripts/check-service-contract.mjs"
+    "check:source": "node scripts/check-service-contract.mjs",
+    "check:recipes": "node scripts/verify-recipes.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.6",
