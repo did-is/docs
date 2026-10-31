@@ -166,7 +166,13 @@ All rules are optional. Only the rules you set are evaluated.
 | `verifiableHistory` | `"required"` | The DID has a cryptographically verifiable history (`did:webvh`). |
 | `maxCacheAgeSeconds` | number | The result is no older than this. |
 | `credentialStatus` | `"active"` | The supplied credential verifies and its status is clear. |
-| `credentialIssuerMustBeSubject` | `true` | The supplied credential's issuer is the evaluated DID. |
+| `credentialIssuerMustBeSubject` | `true` | A supported verified proof establishes issuance by the evaluated DID. This is attribution, not credential acceptance. |
+
+### Verified issuer attribution is separate from acceptance
+
+`credentialIssuerMustBeSubject` checks verified issuer evidence, not just the supplied `issuer` text. Both `proof` and `issuer` checks must pass, with a resolved issuer DID matching the evaluated DID. A failed structure or issuer proof is `FAIL`; unsupported or unavailable proof is `INDETERMINATE`; a verified different issuer is `FAIL`. A missing credential is `INDETERMINATE`.
+
+This strengthens the former literal-equality behavior without changing response field names. “Subject” means the DID being evaluated, not `credentialSubject.id` or the caller. A signed expired or revoked credential, or one whose status cannot be fetched, can still pass issuer attribution while `credential.valid` is false and `credential.status` reports the problem. A valid credential without a status mechanism can pass attribution too. For credential acceptance, also check `credential.valid` and your validity/status requirements. `credentialStatus: "active"` additionally requires complete verified active status evidence; absent status is `INDETERMINATE`. Policy PASS alone neither authenticates a caller nor executes a tool.
 
 ## Next steps
 

@@ -540,6 +540,8 @@ POST /v1/policies/evaluate
 
 Evaluates declarative rules (allowedMethods, allowedCurves, minKeyBits, requireKeyRelationship, domainBinding, tlsMinDaysRemaining, linkedAccounts, verifiableHistory, maxCacheAgeSeconds, credentialStatus, credentialIssuerMustBeSubject) against observed evidence. Unevaluable rules are INDETERMINATE, never PASS.
 
+`credentialIssuerMustBeSubject` requires supported verified proof and DID-bound issuer evidence matching the evaluated DID; raw issuer equality is insufficient. It proves attribution only: validity dates, revocation and status availability remain separate, so check the returned credential's validity for acceptance. See [policy semantics](/build/policies/#verified-issuer-attribution-is-separate-from-acceptance).
+
 Budget: **intensive**.
 
 Request body (JSON):
