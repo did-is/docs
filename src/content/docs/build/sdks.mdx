@@ -155,6 +155,7 @@ with DidisClient(api_key=os.environ["DID_IS_API_KEY"]) as didis:
 </Tabs>
 
 - **The key is sent only for those calls** and for `usage()`. All other methods, and `verifyDelegation` with `register: true`, keep using the public API without the key.
+- **`resolve()` is public even with a key** in SDK 0.2.5. For private resolution, follow the [console guide's native HTTP examples](https://did.is/account#first-api-request), not SDK `resolve()`. They use a resolve-scoped project key and a fresh idempotency key. That route supports **did:key, did:jwk and did:web only**; other methods return `501 METHOD_NOT_INCLUDED`. Private resolution skips shared resolver-cache reads/writes and public observation-history writes, not necessary upstream requests or account/usage/abuse-control processing.
 - **Keep the key server-side.** Read it from an environment variable or a secret store. Never put it in browser or mobile code.
 - **No double billing.** Each call carries a fresh idempotency key, and the automatic retries reuse it, so a retried request is counted once.
 - **`usage()`** returns this month's allowance for the whole team (all projects share it): `period`, plus `Used`, `Reserved`, `Limit` and `Remaining` for the `standard` and `expensive` pools. It needs a key and is not counted.
