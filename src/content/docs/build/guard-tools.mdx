@@ -16,11 +16,13 @@ That example uses the public SDK fingerprint helpers and a local execution bound
 ## What is checked
 
 - **Definition pin (local).** The tool definition the agent actually received hashes to the SHA-256 you approved. The hash is RFC 8785 (JCS) + SHA-256, the same `definitionSha256` DID.is reports for MCP tools. No network call.
-- **Delegation (DID.is).** `verify-tool` confirms the configured agent DID has a registered, `VALID` [delegation chain](/reference/delegation-receipts/) whose capabilities grant the tool, and, if you set `root`, that the chain starts at that root.
+- **Delegation (DID.is).** `verify-tool` confirms the configured agent DID has a registered, `VALID` [delegation chain](/reference/delegation-receipts/) whose capabilities grant the tool and that the chain starts at your configured trusted `root`. Always choose that root from application-owned configuration, not from a submitted grant, model output or the response being checked.
 
 The guard's registered-agent `verify-tool` request is public even when the SDK client has a project key. Keyed inline `authorize` is a different integration path. Neither pin equality nor an authorization response authenticates the caller or binds application arguments.
 
-Published SDK 0.2.5 does not reject an already-expired synthetic ALLOW on its first use; its expiry check only limits cache reuse. Local expiry hardening is **Unreleased**, not a feature available from the published package yet. Apply the guard at the execution boundary, avoid independent unguarded paths, and do not treat it as per-chunk enforcement for lazy streams or an atomic transaction with downstream effects.
+**Migration / unpublished behavior:** the local **Unreleased** SDK requires a nonempty trusted `root` when configuring execution guards; missing, null, empty or whitespace-only roots fail before a network request or handler call. This is a breaking behavior change for rootless integrations. Published SDK **0.2.5** still accepts rootless guards: configure an explicit application-owned root even on that version. Its first-use expiry rejection and awaited-definition/pin hardening are also not the published behavior yet. No new SDK has been published by this documentation change. Rootless `verifyTool` and delegation inspection remain advisory APIs: a valid signature does not establish application authority.
+
+Apply the guard at the execution boundary, avoid independent unguarded paths, and do not treat it as per-chunk enforcement for lazy streams or an atomic transaction with downstream effects.
 
 ## What is not checked
 
@@ -45,19 +47,22 @@ Keep the name-to-capability table in your code or configuration, next to the pin
 
 ## Setup
 
-1. Review the MCP server's `tools/list` and store pins: `pinToolDefinitions(tools)` / `pin_tool_definitions(tools)` returns `{ toolName: sha256 }`.
-2. Register the agent's delegation chain once: `verifyDelegation(chain, { trustedRoots: [root], register: true })`.
-3. Wrap each tool handler with the guard.
+1. Choose the trusted root in your application configuration independently of the supplied chain. Review the MCP server's `tools/list` and store pins: `pinToolDefinitions(tools)` / `pin_tool_definitions(tools)` returns `{ toolName: sha256 }`.
+2. Register the agent's delegation chain once: `verifyDelegation(chain, { trustedRoots: [root], register: true })`. Registration is advisory verification, not authentication of the requesting agent.
+3. Configure that same explicit root on the guard, then wrap each tool handler.
 
 <Tabs syncKey="lang">
 <TabItem label="TypeScript">
 ```ts
 import { DidisClient, createDidisGuard, DidisGuardError } from "@didis/client";
 
+const trustedRoot = process.env.ROOT_DID;
+if (!trustedRoot?.trim()) throw new Error("Configure ROOT_DID from your application's trusted policy");
+
 const guard = createDidisGuard({
   client: new DidisClient(),
   agent: process.env.AGENT_DID!,
-  root: process.env.ROOT_DID,
+  root: trustedRoot,
   pins,               // from step 1
   requirePins: true,
 });
