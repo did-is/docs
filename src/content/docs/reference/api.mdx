@@ -665,7 +665,7 @@ let v: serde_json::Value = reqwest::Client::new()
 GET /v1/mcp/inspect
 ```
 
-Streamable HTTP: server/discover (2026-07-28) with legacy initialize fallback; paginated tools/list; SHA-256 fingerprints of every tool definition (RFC 8785); declared annotations vs heuristic side-effect classes; risk signals; drift against the previous observation. 401 responses are reported, never bypassed.
+Streamable HTTP: server/discover (2026-07-28) with legacy initialize fallback; bounded paginated tools/list; SHA-256 fingerprints of returned tool definitions (RFC 8785); declared annotations vs heuristic side-effect classes; risk signals; drift against comparable complete previous observations. 401 responses are reported, never bypassed. The local candidate reports tools-only `inventoryComplete`; absent older metadata is unknown. The inventory hash describes the observed subset, not omitted tools, prompts or resources. `INSPECTED` alone does not establish completeness; see [MCP inventory limits](/build/agents/).
 
 Budget: **intensive**.
 
