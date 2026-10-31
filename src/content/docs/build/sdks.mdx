@@ -127,7 +127,7 @@ In Rust, percent-encode the identifier once, and on non-2xx responses read the R
 
 ## Using a project API key
 
-Without a key, every call uses the anonymous public API and its per-client budget. With a project API key from the [console](/app/accounts/) (SDK 0.2.5 or later), four methods count against your team's monthly allowance instead: `inspectMcp`, `inspectA2a`, `authorize` and `verifyDelegation` (`inspect_mcp`, `inspect_a2a`, `authorize`, `verify_delegation` in Python). The results are the same as without a key.
+Without a key, every call uses the anonymous public API and its per-client budget. With a project API key from the [console](/app/accounts/) (SDK 0.2.5 or later), four methods count against your team's monthly allowance instead: `inspectMcp`, `inspectA2a`, `authorize` and `verifyDelegation` (`inspect_mcp`, `inspect_a2a`, `authorize`, `verify_delegation` in Python). The response types are the same, but history-dependent MCP evidence differs in the local candidate: keyed one-off inspections neither read nor write shared public observation history and do not use a public predecessor. A new private result can therefore be a first observation even when that endpoint has public history. This candidate privacy fix is pending deployment; it is not a new published SDK version or a claim that every keyed method is private.
 
 <Tabs syncKey="lang">
 <TabItem label="TypeScript">
