@@ -18,7 +18,15 @@ The profile is reported as `rfc8785-binary64-v1`.
 - No whitespace is emitted outside strings.
 - Strings use the minimal escaping of RFC 8785 (`\b \t \n \f \r`, lowercase `\u00xx` for other control characters; `/` and non-ASCII are not escaped).
 - Numbers are IEEE-754 binary64 values serialized as ECMAScript does: `-0` becomes `0`, exponents are used from `1e21` and below `1e-6`.
-- Integers beyond 2<sup>53</sup> − 1 round like in JavaScript: `9007199254740993` becomes `9007199254740992`. Put large exact integers in strings.
+- Integers that are not exactly representable round like in JavaScript: `9007199254740993` becomes `9007199254740992`. Some larger integers, including `9007199254740992` and `9007199254740994`, are exactly representable. Put identifiers and large exact integers in strings.
+
+## Exact meaning at signature boundaries
+
+RFC 8785 remains unchanged. The verifier's application profile separately refuses exact integer values that lose precision when transformed to binary64, throughout a supported JCS Data Integrity document and its proof options. A refused credential is `MALFORMED`, not signature-valid, and cannot satisfy required claims. This includes nested arrays, extension properties and contexts; it is not limited to the credential subject. Supported fetched Data Integrity status lists use the same boundary.
+
+This rule distinguishes an exact integer token from a parsed binary64 number. Decimal-point and exponent forms already have binary64 meaning; they are not represented as preserving an arbitrary-precision lexical integer. Large exact identifiers should therefore be strings, not an exponent spelling intended to recover precision. Caller-supplied exact claim requirements are not rounded: a distinct requirement remains unsatisfied. JWT and SD-JWT payload signatures authenticate raw bytes and are not subjected to this JCS integer restriction.
+
+These are local candidate changes pending a separately approved deployment, not a claim that the currently deployed verifier has already changed.
 
 ## Duplicate members are refused
 
