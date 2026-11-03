@@ -53,5 +53,18 @@ test('public artifacts contain no private key material or personal account metad
     assert.doesNotMatch(text,/"d"\s*:|PRIVATE KEY|[a-z0-9._%+-]+@gmail\.com/i,file);
   }
   const source=fs.readFileSync(new URL('../src/content/docs/start/official-source-demo.mdx',import.meta.url),'utf8');
-  assert.match(source,/No reciprocal X post has been captured/);assert.match(source,/not legal certification/i);
+  assert.match(source,/not legal certification/i);
+  assert.doesNotMatch(source,/ledgerbingo|[a-z0-9._%+-]+@gmail\.com/i);
+});
+test('X post reference is canonical and describes only independently observed public references', () => {
+  const source=fs.readFileSync(new URL('../src/content/docs/start/official-source-demo.mdx',import.meta.url),'utf8');
+  const post='https://x.com/didishq/status/2117758329175097403';
+  assert.equal(source.split(post).length-1,2);
+  assert.doesNotMatch(source,/2117758329175097403[?]|No reciprocal X post has been captured/);
+  assert.match(source,/independently retrieved from X on \*\*3 November 2026 at 23:20 UTC\*\*/);
+  assert.match(source,/reciprocal public references/i);
+  assert.match(source,/No X OAuth verification has been performed/);
+  assert.match(source,/not an X OAuth account-control check or an automated linked-account `CONFIRMED` result/);
+  assert.match(source,/not itself the exact signed statement/);
+  assert.match(source,/10 November 2026 at 21:58:33 UTC/);
 });

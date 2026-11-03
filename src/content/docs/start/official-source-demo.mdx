@@ -13,7 +13,9 @@ This page demonstrates that distinction using **our own service**, not a custome
 
 **Our declared public sources:** [DID.is website](https://did.is/) · [DID.is on X — @didishq](https://x.com/didishq) · [DID.is identifier](https://did.is/did:web:did.is).
 
-The DID.is website already links to @didishq in its footer. That is a **website operator's account declaration**, not an independent X ownership check. No reciprocal X post has been captured for this demonstration, and no X OAuth verification has been performed. We do not label X account control as confirmed.
+The DID.is website links to @didishq in its footer. That is a **website operator's account declaration**. The [public @didishq post](https://x.com/didishq/status/2117758329175097403), independently retrieved from X on **3 November 2026 at 23:20 UTC**, links back to `did.is` and this demonstration page. Its text declares the official sources and says: “Changed words fail; a different signer is not us. Links do not verify every message.”
+
+These are **reciprocal public references**, not an X OAuth account-control check or an automated linked-account `CONFIRMED` result. No X OAuth verification has been performed. The post points to this demonstration; it is not itself the exact signed statement below, and it does not make every post a signed message.
 
 <OfficialSourceDemo />
 
@@ -31,6 +33,7 @@ The fifth example is correctly signed but expired. It is rejected by this demons
 | Evidence | What it establishes | What it does not establish |
 | --- | --- | --- |
 | Website footer and links on this page | The website declares @didishq as its X account. | Independent control of the X account, or an X OAuth check. |
+| Public @didishq post, independently retrieved from X on 3 November 2026 UTC | The X account publicly points back to `did.is` and this demonstration: reciprocal public references. | An X OAuth account-control check, an automated linked-account `CONFIRMED` result, or a signature on every post. |
 | DID.is ↔ docs.did.is domain-linkage proof | The published DID key links the website and documentation origin, within the proof's validity. | X account ownership or legal identity. |
 | This signed statement | One exact statement matches a key published for `did:web:did.is`, using the dated snapshot shown. | That every X post or other message has a signature, that every claim is true, or that a message grants permission to act. |
 | Expected-issuer and date policy | A different issuer or expired statement is not accepted as this demonstration's official source. | A general authentication, access-control or fraud-detection system. |
@@ -41,6 +44,7 @@ The browser demonstration uses the standard compact JWS/JWT encoding with applic
 
 ## Inspect the public evidence
 
+- [Public @didishq post — reciprocal website and demonstration links](https://x.com/didishq/status/2117758329175097403)
 - [Original signed statement — compact JWS](/demo/official-source-20261103/original.jws)
 - [Readable original statement — JSON](/demo/official-source-20261103/statement.json)
 - [Changed-text fixture — compact JWS](/demo/official-source-20261103/tampered.jws)
