@@ -79,3 +79,12 @@ for (const [label, file, before, after] of [
     assert.throws(() => docsContract((name) => name === file ? read(name).replaceAll(before, after) : read(name)));
   });
 }
+
+test('MCP check reference qualifies partial comparison and private persistence', () => {
+  const agents = read('build/agents.mdx');
+  assert.match(agents, /`NOT_COMPARABLE`/);
+  assert.match(agents, /complete tools-only inventory with no risk signals/);
+  assert.match(agents, /inventory is partial/);
+  assert.match(agents, /partial\/unknown inventory/);
+  assert.match(agents, /private one-off check was not stored in public history/);
+});
