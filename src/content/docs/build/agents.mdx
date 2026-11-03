@@ -232,6 +232,8 @@ The response also has `checks[]`, `inventoryHash`, `classCounts`, `tls` and `lim
 
 **Tools-only completeness (local candidate):** `INSPECTED` is not a complete-inventory verdict. Whole-tools acceptance requires explicit `inventoryComplete: true`; older responses without this field have unknown completeness. The hash covers returned observed definitions, not omitted tools, prompts, resources or runtime behavior. Bounds stay at 2 MiB per response, 10 pages and 500 returned tools. Exactly 500 tools with no cursor or dropped entries can be complete; 501 received tools, an unfetched cursor at a cap or malformed omitted entries are partial. A matching subset hash cannot establish that the whole inventory is unchanged. Scheduled checks must not replace a complete baseline or emit tool-removal alerts from a partial/unknown list. Individually reviewed pins can still attest matching observed tools without making a whole-catalog claim.
 
+`inventoryEvidence` explains the tools-only collection with `scope`, `pagesFetched`, `entriesSeen`, `entriesDropped`, `hasMore` and `reasons`. Counts refer to entries actually received, not a guessed remote total. Reasons identify a tool/page cap, malformed entries or duplicate names. A remaining cursor is reported without exposing the upstream token. A malformed response envelope is an upstream failure, not a complete empty list. Stored older observations with no completeness metadata stay unknown, and a badge's date remains the date of the stored result.
+
 These candidate fields and behavior need a separately approved deployment and SDK release; published 0.2.5 does not expose the new SDK types yet.
 
 | Check | `PASS` | `WARN` | `SKIP` |
