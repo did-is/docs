@@ -8,7 +8,7 @@ import CaseDiagram from '../../../components/CaseDiagram.astro';
 
 The SDKs are thin clients for the [public API](/build/api-overview/): one method per endpoint, typed responses and a single error type. They do the routine work for you: the base URL, encoding identifiers, timeouts and turning error responses into exceptions.
 
-The SDKs **add no checks of their own**. Every result comes from the API and means exactly what the API page for that endpoint says. Anything the SDKs do not cover, you can call over HTTP.
+The **client methods** return the API results described on each endpoint page. The separate execution-guard and pin helpers also perform local checks, including trusted-root configuration, reviewed definition pins and approval deadlines; see [Guard agent tools](/build/guard-tools/). Anything the SDKs do not cover, you can call over HTTP.
 
 <CaseDiagram
   label="Your code calls an SDK method; the SDK sends the HTTPS request to did.is/api and returns the parsed result or raises DidisError"
