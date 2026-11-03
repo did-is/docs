@@ -21,7 +21,7 @@ For an account, DID.is stores your name, email, a password hash (never the passw
 
 ## Credentials and agents you submit
 
-Credentials, JWS values and delegation chains you send to the public API are processed to produce the result. Chains are stored only when you explicitly register them (`register: true`) for [`verify-tool`](/build/agents/#check-a-registered-agent). MCP inspections store the tool inventory fingerprint so later inspections can report drift.
+Credentials, JWS values and delegation chains you send to the public API are processed to produce the result. Chains are stored only when you explicitly register them (`register: true`) for [`verify-tool`](/build/agents/#check-a-registered-agent). Public MCP inspections retain observations, including the endpoint and returned tool metadata, so compatible complete observations can report drift. Customer-key private one-off inspections do not read or write public history and retain no comparison baseline.
 
 ## Outbound requests
 
@@ -29,4 +29,4 @@ DID.is fetches documents, configurations, status lists and agent cards only from
 
 ## Deletion
 
-Deleting your account removes your sign-in immediately and closes your projects, keys, webhooks and listings. Encrypted backups rotate out within 90 days. Questions: [ai@did.is](mailto:ai@did.is).
+Deleting your account removes your sign-in immediately and closes your projects, keys, webhooks and listings. Encrypted off-host backups rotate out within 90 days. Root-restricted local database snapshots are plaintext, not encrypted archives; local cleanup follows whole-day age thresholds and the scheduled cadence rather than an exact deletion deadline. This does not establish a complete disaster-recovery restore. Questions: [ai@did.is](mailto:ai@did.is).

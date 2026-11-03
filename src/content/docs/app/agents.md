@@ -10,7 +10,7 @@ description: Inspect MCP servers and A2A agent cards on did.is/agents, and under
 Enter an MCP endpoint URL (Streamable HTTP), for example `https://mcp.example.com/mcp`. The same check is also available as a standalone page with a README badge at [did.is/tools/mcp-check](https://did.is/tools/mcp-check) (see [README badge](#readme-badge)). DID.is:
 
 1. Tries the current protocol (`2026-07-28`, `server/discover`) and falls back to the `2025-11-25` session handshake.
-2. Lists all tools (paginated) and computes a SHA-256 fingerprint of each tool definition and input schema, using [JSON canonicalization](/reference/jcs/).
+2. Lists observed tools (paginated within the 2 MiB response, 10-page and 500-tool bounds) and computes a SHA-256 fingerprint of each tool definition and input schema, using [JSON canonicalization](/reference/jcs/).
 3. Classifies each tool's side effects by heuristic (`read_only`, `write`, `network_egress`, `system_execution`) and compares that with the server's own annotations.
 4. Flags risk signals, such as hidden instructions in descriptions.
 5. Compares the tool inventory with DID.is's previous observation of the same endpoint (**drift**).
@@ -21,7 +21,8 @@ Limitations shown with every result:
 
 - Side-effect classes are DID.is heuristics over names, descriptions and schemas; declared annotations are the server's own claims.
 - `serverInfo` is self-reported; MCP has no server identity attestation.
-- Drift is measured against DID.is's previous observation of the same endpoint.
+- Whole-tools drift requires two complete inventories with compatible profiles. Partial or unknown inventories are not evidence that the whole catalog is unchanged; inspect `inventoryComplete` and `inventoryEvidence`. Per-tool comparisons can report `NOT_COMPARABLE`.
+- The public check retains public observations. Customer-key private one-off inspection neither reads nor writes public history and retains no comparison baseline.
 
 ## A2A agent cards
 
