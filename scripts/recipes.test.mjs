@@ -16,8 +16,8 @@ test('all three workflows have actual curl, TypeScript and Python programs with 
     assert.ok(code?.includes('BASE'), `${name}.${ext}: explicit base URL`);
     assert.doesNotMatch(code, /https:\/\/did\.is|<root receipt>|<JWT|\.\.\./);
   }
-  assert.match(source, /published `@didis\/client` 0\.2\.5/);
-  assert.match(source, /published `didis-py` 0\.2\.5/);
+  assert.match(source, /published `@didis\/client` 0\.2\.7/);
+  assert.match(source, /published `didis-py` 0\.2\.7/);
   assert.match(source, /revocation is `SKIP`/);
   assert.match(source, /not a valid signed credential/);
   assert.doesNotMatch(source, /Each recipe is a whole program you can paste and run|0\.2\.4|didis\.….?hain/);

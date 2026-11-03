@@ -25,7 +25,7 @@ The SDKs **add no checks of their own**. Every result comes from the API and mea
 
 | | TypeScript | Python |
 | --- | --- | --- |
-| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.2.5 | [`didis-py`](https://pypi.org/project/didis-py/) 0.2.5 (import `didis`) |
+| Package | [`@didis/client`](https://www.npmjs.com/package/@didis/client) 0.2.7 | [`didis-py`](https://pypi.org/project/didis-py/) 0.2.7 (import `didis`) |
 | Source | [did-is/didis-js](https://github.com/did-is/didis-js) | [did-is/didis-py](https://github.com/did-is/didis-py) |
 | Runtime | Any runtime with `fetch`: Node 18+, Deno, Bun, browsers, edge. Zero dependencies, ESM. | Python 3.11+, `httpx`. Sync `DidisClient` and async `AsyncDidisClient`. |
 | Responses | Typed objects | Plain `dict`s typed with `TypedDict` (`didis.types`) |
@@ -127,7 +127,7 @@ In Rust, percent-encode the identifier once, and on non-2xx responses read the R
 
 ## Using a project API key
 
-Without a key, every call uses the anonymous public API and its per-client budget. With a project API key from the [console](/app/accounts/) (SDK 0.2.5 or later), four methods count against your team's monthly allowance instead: `inspectMcp`, `inspectA2a`, `authorize` and `verifyDelegation` (`inspect_mcp`, `inspect_a2a`, `authorize`, `verify_delegation` in Python). The response types are the same, but history-dependent MCP evidence differs in the local candidate: keyed one-off inspections neither read nor write shared public observation history and do not use a public predecessor. A new private result can therefore be a first observation even when that endpoint has public history. This candidate privacy fix is pending deployment; it is not a new published SDK version or a claim that every keyed method is private.
+Without a key, every call uses the anonymous public API and its per-client budget. With a project API key from the [console](/app/accounts/) (SDK 0.2.5 or later), four methods count against your team's monthly allowance instead: `inspectMcp`, `inspectA2a`, `authorize` and `verifyDelegation` (`inspect_mcp`, `inspect_a2a`, `authorize`, `verify_delegation` in Python). The response types are the same, but history-dependent MCP evidence differs: keyed one-off inspections neither read nor write shared public observation history and do not use a public predecessor. A new private result can therefore be a first observation even when that endpoint has public history. This privacy behavior is deployed in the service; it is not a claim that every keyed method is private.
 
 <Tabs syncKey="lang">
 <TabItem label="TypeScript">
@@ -155,7 +155,7 @@ with DidisClient(api_key=os.environ["DID_IS_API_KEY"]) as didis:
 </Tabs>
 
 - **The key is sent only for those calls** and for `usage()`. All other methods, and `verifyDelegation` with `register: true`, keep using the public API without the key.
-- **`resolve()` is public even with a key** in SDK 0.2.5. For private resolution, follow the [console guide's native HTTP examples](https://did.is/account#first-api-request), not SDK `resolve()`. They use a resolve-scoped project key and a fresh idempotency key. That route supports **did:key, did:jwk and did:web only**; other methods return `501 METHOD_NOT_INCLUDED`. Private resolution skips shared resolver-cache reads/writes and public observation-history writes, not necessary upstream requests or account/usage/abuse-control processing.
+- **`resolve()` is public even with a key** in SDK 0.2.7, as in 0.2.5. For private resolution, follow the [console guide's native HTTP examples](https://did.is/account#first-api-request), not SDK `resolve()`. They use a resolve-scoped project key and a fresh idempotency key. That route supports **did:key, did:jwk and did:web only**; other methods return `501 METHOD_NOT_INCLUDED`. Private resolution skips shared resolver-cache reads/writes and public observation-history writes, not necessary upstream requests or account/usage/abuse-control processing.
 - **Keep the key server-side.** Read it from an environment variable or a secret store. Never put it in browser or mobile code.
 - **No double billing.** Each call carries a fresh idempotency key, and the automatic retries reuse it, so a retried request is counted once.
 - **`usage()`** returns this month's allowance for the whole team (all projects share it): `period`, plus `Used`, `Reserved`, `Limit` and `Remaining` for the `standard` and `expensive` pools. It needs a key and is not counted.
@@ -205,3 +205,13 @@ There is no published DID.is command-line tool. Use `curl` or the SDKs.
 
 - [API overview](/build/api-overview/) for budgets and conventions.
 - [Resolution](/build/resolution/) for your first real call.
+
+## Migrating to 0.2.7
+
+0.2.7 is the first published npm release after 0.2.5. Python 0.2.6 was published separately; 0.2.7 aligns both SDKs and corrects first-party license attribution to DID.is. Existing older registry files are unchanged.
+
+Execution guards require an application-owned trusted root. TypeScript requires `root` statically; Python keeps Optional annotations but rejects missing/null/empty/whitespace roots at runtime with `GUARD_MISCONFIGURED`, before network or handler execution. The 0.2.7 increment is not a backward-compatible patch. See [Guard agent tools](/build/guard-tools/) for expiry, awaited-definition and immutable pin/deadline boundaries.
+
+`diffObservations(did, fromObservation, toObservation)` / sync and async `diff_observations(did, from_observation, to_observation)` select exact public history rows, including domain-only changes with identical document hashes. Legacy hash selectors remain available; ambiguous hashes return `INVALID_REQUEST`. This does not expose private history.
+
+MCP `inventoryComplete` and `inventoryEvidence` are optional types in 0.2.7. Missing completeness means unknown. Whole-inventory comparisons require complete compatible inventories; pin attestation checks only the requested reviewed definitions, not tool behavior.

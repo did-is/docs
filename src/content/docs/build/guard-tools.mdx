@@ -20,7 +20,7 @@ That example uses the public SDK fingerprint helpers and a local execution bound
 
 The guard's registered-agent `verify-tool` request is public even when the SDK client has a project key. Keyed inline `authorize` is a different integration path. Neither pin equality nor an authorization response authenticates the caller or binds application arguments.
 
-**Migration / unpublished behavior:** the local **Unreleased** SDK requires a nonempty trusted `root` when configuring execution guards; missing, null, empty or whitespace-only roots fail before a network request or handler call. This is a breaking behavior change for rootless integrations. Published SDK **0.2.5** still accepts rootless guards: configure an explicit application-owned root even on that version. Its first-use expiry rejection and awaited-definition/pin hardening are also not the published behavior yet. No new SDK has been published by this documentation change. Rootless `verifyTool` and delegation inspection remain advisory APIs: a valid signature does not establish application authority.
+**0.2.7 migration (breaking):** both SDKs require a nonempty, trimmed application-owned trusted `root` when configuring execution guards. Missing, null, empty or whitespace-only roots raise `GUARD_MISCONFIGURED` before a network request or handler call. TypeScript requires `root` statically; Python retains its Optional annotation but enforces it at runtime. Upgrade rootless integrations by supplying a root from trusted application configuration, never from the submitted chain, model output or authorization response. 0.2.5 accepts rootless guards and does not include the first-use expiry and awaited-definition/pin hardening in 0.2.7. The third-component version increment is not a backward-compatible patch. Rootless `verifyTool` and delegation inspection remain advisory APIs: a valid signature does not establish application authority.
 
 Apply the guard at the execution boundary, avoid independent unguarded paths, and do not treat it as per-chunk enforcement for lazy streams or an atomic transaction with downstream effects.
 
@@ -227,13 +227,13 @@ Returning a refusal is a choice for the model's benefit; the tool body still doe
 | --- | --- |
 | `TOOL_DRIFT` | The definition no longer matches its pin, or its name differs. |
 | `TOOL_DEFINITION_MISSING` | The tool is pinned but no definition was supplied, or `requirePins` is on and the tool has no pin. |
-| `TOOL_NOT_AUTHORIZED` | DID.is answered `DENY`, or the chain's root is not the configured root. |
+| `TOOL_NOT_AUTHORIZED` | DID.is answered `DENY`, the returned root differs from the configured root, or a parseable approval expiry has passed. |
 | `GUARD_UNAVAILABLE` | DID.is could not be reached, returned an error (including `429`), or gave an unexpected answer. |
 | `GUARD_MISCONFIGURED` | Invalid agent or root DID, pin, cache setting, tool name or capability (for example one containing `*`). |
 
 ## Caching and limits
 
-- An `ALLOW` is reused for 30 seconds by default (`allowCacheMs` / `allow_cache_seconds`, `0` disables), never past the delegation's expiry. `DENY` and errors are never cached. Call `clearCache()` / `clear_cache()` after revoking a delegation.
+- An `ALLOW` is reused for 30 seconds by default (`allowCacheMs` / `allow_cache_seconds`, `0` disables), never past a parseable delegation expiry. Expired approvals are refused on first use and with caching disabled; each call's immutable deadline and approval pin are rechecked after awaited work and immediately before handler invocation. Missing/unparseable expiry retains TTL-only behavior. `DENY` and errors never fall back to stale approval. Call `clearCache()` / `clear_cache()` after revoking a delegation.
 - `verify-tool` uses the standard rate-limit budget. A `429` fails closed, so size the cache to your call rate. See [Errors and rate limits](/build/errors/).
 - The `ALLOW` cache is keyed by capability, so two tool names mapped to the same capability share one answer.
 - `onDecision` / `on_decision` receives every decision for audit logs, with both `tool` and `capability`. An exception in the hook does not change the decision.
