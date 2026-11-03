@@ -93,6 +93,7 @@ export default defineConfig({
             { label: 'Introduction', slug: 'start/introduction' },
             { label: 'Quickstart', slug: 'start/quickstart' },
             { label: 'First recipes', slug: 'start/recipes' },
+            { label: 'Official-source demo', slug: 'start/official-source-demo' },
             { label: 'Use cases', slug: 'start/use-cases' },
             { label: 'Core concepts', slug: 'start/concepts' },
           ],

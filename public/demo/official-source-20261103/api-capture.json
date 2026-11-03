@@ -1,0 +1,103 @@
+{
+  "checkedAt": "2026-11-03T21:58:38.329Z",
+  "endpoint": "https://did.is/api/v1/fast-verify/jws",
+  "note": "Signature results only; expected issuer and expiry require the separate demonstration policy.",
+  "results": {
+    "original": {
+      "alg": "EdDSA",
+      "headline": "Signed by did:web:did.is with its Ed25519 key (assertionMethod).",
+      "kid": "did:web:did.is#key-1",
+      "payload": {
+        "declaredAccount": "https://x.com/didishq",
+        "demo": "https://docs.did.is/start/official-source-demo/",
+        "exp": 1794347913,
+        "iat": 1793743113,
+        "iss": "did:web:did.is",
+        "jti": "urn:didis:official-source-demo:20261103",
+        "nbf": 1793743053,
+        "purpose": "public-source-demonstration-only",
+        "statement": "DID.is publishes this demonstration at docs.did.is. Our website is https://did.is/ and our declared X account is https://x.com/didishq. This signature covers this statement only; it is not proof of X account control or of other messages.",
+        "sub": "https://did.is/",
+        "website": "https://did.is/"
+      },
+      "relationship": "assertionMethod",
+      "signer": "did:web:did.is",
+      "signingInputSha256": "7fc0618848f122e87634c40d24dc09597abcf4ba2f11b9d46374ed0e0d8cc2d4",
+      "status": "VALID",
+      "typ": "JWT",
+      "valid": true
+    },
+    "tampered": {
+      "alg": "EdDSA",
+      "headline": "signature verification failed",
+      "kid": "did:web:did.is#key-1",
+      "payload": {
+        "declaredAccount": "https://x.com/didishq",
+        "demo": "https://docs.did.is/start/official-source-demo/",
+        "exp": 1794347913,
+        "iat": 1793743113,
+        "iss": "did:web:did.is",
+        "jti": "urn:didis:official-source-demo:20261103",
+        "nbf": 1793743053,
+        "purpose": "public-source-demonstration-only",
+        "statement": "CONTROLLED TAMPERED FIXTURE: the signed text was changed without signing again.",
+        "sub": "https://did.is/",
+        "website": "https://did.is/"
+      },
+      "relationship": "assertionMethod",
+      "signer": "did:web:did.is",
+      "signingInputSha256": "3d829b8ddad1ca1b037a7c35cf6530997a58714f6c4c1cf91c0cf048da524508",
+      "status": "INVALID",
+      "typ": "JWT",
+      "valid": false
+    },
+    "wrong-issuer": {
+      "alg": "EdDSA",
+      "headline": "Signed by did:jwk:eyJjcnYiOiJFZDI1NTE5IiwieCI6ImpYV01qNjk1bjJpOHJPaWUtc0RQU0EzeVExVEFlc0pEOFFLdXU4ZlFsOE0iLCJrdHkiOiJPS1AifQ with its Ed25519 key (assertionMethod).",
+      "kid": "did:jwk:eyJjcnYiOiJFZDI1NTE5IiwieCI6ImpYV01qNjk1bjJpOHJPaWUtc0RQU0EzeVExVEFlc0pEOFFLdXU4ZlFsOE0iLCJrdHkiOiJPS1AifQ#0",
+      "payload": {
+        "declaredAccount": "https://x.com/didishq",
+        "demo": "https://docs.did.is/start/official-source-demo/",
+        "exp": 1794347913,
+        "iat": 1793743113,
+        "iss": "did:jwk:eyJjcnYiOiJFZDI1NTE5IiwieCI6ImpYV01qNjk1bjJpOHJPaWUtc0RQU0EzeVExVEFlc0pEOFFLdXU4ZlFsOE0iLCJrdHkiOiJPS1AifQ",
+        "jti": "urn:didis:official-source-demo:20261103",
+        "nbf": 1793743053,
+        "purpose": "public-source-demonstration-only",
+        "statement": "CONTROLLED NEGATIVE FIXTURE: a different key signed this; it is not an official DID.is statement.",
+        "sub": "https://did.is/",
+        "website": "https://did.is/"
+      },
+      "relationship": "assertionMethod",
+      "signer": "did:jwk:eyJjcnYiOiJFZDI1NTE5IiwieCI6ImpYV01qNjk1bjJpOHJPaWUtc0RQU0EzeVExVEFlc0pEOFFLdXU4ZlFsOE0iLCJrdHkiOiJPS1AifQ",
+      "signingInputSha256": "13dc2ca151ae4326f8be25646aca65bf8e86cdbcbe2227f9acda41a071086e69",
+      "status": "VALID",
+      "typ": "JWT",
+      "valid": true
+    },
+    "expired": {
+      "alg": "EdDSA",
+      "headline": "Signed by did:web:did.is with its Ed25519 key (assertionMethod).",
+      "kid": "did:web:did.is#key-1",
+      "payload": {
+        "declaredAccount": "https://x.com/didishq",
+        "demo": "https://docs.did.is/start/official-source-demo/",
+        "exp": 1793739513,
+        "iat": 1793735913,
+        "iss": "did:web:did.is",
+        "jti": "urn:didis:official-source-demo:20261103",
+        "nbf": 1793735913,
+        "purpose": "public-source-demonstration-only",
+        "statement": "CONTROLLED EXPIRED FIXTURE: this demonstration is out of date.",
+        "sub": "https://did.is/",
+        "website": "https://did.is/"
+      },
+      "relationship": "assertionMethod",
+      "signer": "did:web:did.is",
+      "signingInputSha256": "2b05a9232abec32d1ba46e7bf5d2b5cd776c3d9a2e2f2be376b1bd4750c4445f",
+      "status": "VALID",
+      "typ": "JWT",
+      "valid": true
+    }
+  }
+}

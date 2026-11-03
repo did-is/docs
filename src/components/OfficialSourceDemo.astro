@@ -1,0 +1,78 @@
+---
+---
+<section class="source-demo" aria-label="Signed statement demonstration">
+  <h2>Try changing the message</h2>
+  <p>No login, wallet or payment. These buttons check public demonstration files in your browser using Ed25519 Web Crypto and a <strong>dated public-key snapshot</strong>. They do not contact X or make a fresh DID lookup.</p>
+  <div class="choices" role="group" aria-label="Choose a controlled example">
+    <button data-example="original">1. Original statement</button>
+    <button data-example="tampered">2. Changed text</button>
+    <button data-example="wrong-issuer">3. Different signer</button>
+    <button data-example="unavailable">4. Check unavailable</button>
+    <button data-example="expired">Expired statement</button>
+  </div>
+  <div class="result" aria-live="polite" aria-atomic="true">
+    <p id="demo-state"><strong>Not checked yet</strong></p>
+    <p id="demo-explanation">Choose the original statement first, then compare the changed text and different signer.</p>
+  </div>
+  <dl>
+    <dt>Expected source (fixed before checking)</dt><dd><code>did:web:did.is</code></dd>
+    <dt>Snapshot captured</dt><dd id="demo-captured">3 November 2026 UTC</dd>
+    <dt>Statement valid until</dt><dd id="demo-expiry">10 November 2026 UTC</dd>
+  </dl>
+  <details><summary>Read the selected statement and check details</summary><pre id="demo-details">No example selected.</pre></details>
+  <p>Every negative example is a <strong>controlled demonstration fixture</strong>, not a finding about a real account or person. “Check unavailable” deliberately simulates missing evidence; it does not report a live outage.</p>
+</section>
+<script>
+  const base = '/demo/official-source-20261103';
+  const state = document.querySelector('#demo-state')!;
+  const explanation = document.querySelector('#demo-explanation')!;
+  const details = document.querySelector('#demo-details')!;
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-example]')) {
+    button.addEventListener('click', async () => {
+      state.textContent = 'Checking…';
+      try {
+        const { assess } = await import(/* @vite-ignore */ `${base}/policy.mjs`);
+        const name = button.dataset.example!;
+        if (name === 'unavailable') {
+          const result = assess({ available: false });
+          state.textContent = result.state; explanation.textContent = result.reason;
+          details.textContent = 'Controlled simulation: no network or cryptographic check was performed for this example.'; return;
+        }
+        const response = await fetch(`${base}/bundle.json`);
+        if (!response.ok) throw new Error('Public demonstration bundle unavailable.');
+        const bundle = await response.json();
+        document.querySelector('#demo-captured')!.textContent = bundle.capturedAt;
+        document.querySelector('#demo-expiry')!.textContent = bundle.expiresAt;
+        const [h, p, s] = bundle.fixtures[name].split('.');
+        const bytes = (text: string) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        const header = JSON.parse(new TextDecoder().decode(bytes(h)));
+        const payload = JSON.parse(new TextDecoder().decode(bytes(p)));
+        const vm = bundle.didDocument.verificationMethod.find((method: {id: string}) => method.id === header.kid);
+        let jwk, signer;
+        if (vm && bundle.didDocument.assertionMethod.includes(header.kid)) {
+          jwk = vm.publicKeyJwk; signer = bundle.didDocument.id;
+        } else if (name === 'wrong-issuer' && header.kid === `did:jwk:${btoa(JSON.stringify(bundle.otherPublicJwk)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')}#0`) {
+          jwk = bundle.otherPublicJwk; signer = header.kid.split('#')[0];
+        } else throw new Error('Key not present in the controlled fixture set.');
+        if (header.alg !== 'EdDSA' || header.typ !== 'JWT') throw new Error('Unexpected demonstration header.');
+        const key = await crypto.subtle.importKey('jwk', jwk, {name: 'Ed25519'}, false, ['verify']);
+        const signatureValid = await crypto.subtle.verify('Ed25519', key, bytes(s), new TextEncoder().encode(`${h}.${p}`));
+        const result = assess({signatureValid, signer, payload});
+        state.textContent = result.state; explanation.textContent = result.reason;
+        details.textContent = JSON.stringify({example: name, signatureValid, signer, expectedIssuer: 'did:web:did.is', payload}, null, 2);
+      } catch {
+        state.textContent = 'UNKNOWN';
+        explanation.textContent = 'The check could not be completed. This browser may not support Ed25519 Web Crypto, or a public file may be unavailable. Do not treat this as verified; use the downloadable API example below.';
+        details.textContent = 'No positive conclusion was made.';
+      }
+    });
+  }
+</script>
+<style>
+  .source-demo{border:1px solid var(--sl-color-gray-4);border-radius:1rem;padding:1.25rem;margin:1.5rem 0;background:var(--sl-color-bg-sidebar)}
+  .source-demo h2{margin-top:0}.choices{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0}
+  button{font:inherit;font-weight:600;color:var(--sl-color-white);background:var(--sl-color-gray-6);border:1px solid var(--sl-color-gray-3);border-radius:.5rem;padding:.65rem .85rem;cursor:pointer}
+  button:hover,button:focus-visible{border-color:var(--sl-color-text-accent);outline:2px solid var(--sl-color-text-accent);outline-offset:2px}
+  .result{border-left:4px solid var(--sl-color-text-accent);padding:.5rem 1rem;margin:1rem 0}.result p{margin:.4rem 0}
+  dt{font-weight:600}dd{margin:0 0 .75rem;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:28rem;overflow:auto;font-size:.8rem}
+</style>

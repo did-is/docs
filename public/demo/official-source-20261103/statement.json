@@ -1,0 +1,13 @@
+{
+  "iss": "did:web:did.is",
+  "sub": "https://did.is/",
+  "iat": 1793743113,
+  "nbf": 1793743053,
+  "exp": 1794347913,
+  "jti": "urn:didis:official-source-demo:20261103",
+  "purpose": "public-source-demonstration-only",
+  "statement": "DID.is publishes this demonstration at docs.did.is. Our website is https://did.is/ and our declared X account is https://x.com/didishq. This signature covers this statement only; it is not proof of X account control or of other messages.",
+  "website": "https://did.is/",
+  "declaredAccount": "https://x.com/didishq",
+  "demo": "https://docs.did.is/start/official-source-demo/"
+}

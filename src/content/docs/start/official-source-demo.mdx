@@ -1,0 +1,89 @@
+---
+title: An official-source demonstration
+description: Check one statement signed by the DID.is website key, then compare changed text and a different signer. Account links and signatures prove different things.
+---
+
+import OfficialSourceDemo from '../../../components/OfficialSourceDemo.astro';
+
+## Is this message from the source I expected?
+
+A familiar name or profile picture is easy to copy. A signature gives you a different check: **did the expected source's published key sign these exact words?** Change the words, and the signature no longer matches. Use a different signer, and even a valid signature is not from the source you expected.
+
+This page demonstrates that distinction using **our own service**, not a customer or an accusation about another account. Start from a website address you already know is correct. The brand name and this page do not independently establish who legally operates the website.
+
+**Our declared public sources:** [DID.is website](https://did.is/) · [DID.is on X — @didishq](https://x.com/didishq) · [DID.is identifier](https://did.is/did:web:did.is).
+
+The DID.is website already links to @didishq in its footer. That is a **website operator's account declaration**, not an independent X ownership check. No reciprocal X post has been captured for this demonstration, and no X OAuth verification has been performed. We do not label X account control as confirmed.
+
+<OfficialSourceDemo />
+
+## A two-minute walkthrough
+
+1. Click **Original statement**. While it is in date, the result is **MATCHED**: these exact bytes match the captured website key and the expected issuer.
+2. Click **Changed text**. The result is **REJECTED**: the words changed, but the signature did not.
+3. Click **Different signer**. The signature itself is valid, yet the result is **REJECTED**: it is not the expected DID.is issuer. Anyone can create a valid signature with their own key.
+4. Click **Check unavailable**. The result is **UNKNOWN**, not a pass and not a claim that someone is malicious.
+
+The fifth example is correctly signed but expired. It is rejected by this demonstration's date policy. The original also stops matching after **10 November 2026 at 21:58:33 UTC**; it is an intentionally short-lived example, not an automatically renewed endorsement.
+
+## What the evidence does — and does not — establish
+
+| Evidence | What it establishes | What it does not establish |
+| --- | --- | --- |
+| Website footer and links on this page | The website declares @didishq as its X account. | Independent control of the X account, or an X OAuth check. |
+| DID.is ↔ docs.did.is domain-linkage proof | The published DID key links the website and documentation origin, within the proof's validity. | X account ownership or legal identity. |
+| This signed statement | One exact statement matches a key published for `did:web:did.is`, using the dated snapshot shown. | That every X post or other message has a signature, that every claim is true, or that a message grants permission to act. |
+| Expected-issuer and date policy | A different issuer or expired statement is not accepted as this demonstration's official source. | A general authentication, access-control or fraud-detection system. |
+
+This is **not legal certification**, an authentication challenge, a credential granting access, a payment instruction, or an authorization token. Do not use any of these files to authorize actions. Missing evidence is uncertainty, not evidence of maliciousness.
+
+The browser demonstration uses the standard compact JWS/JWT encoding with application-specific statement fields. It is **not a new identity standard** or a claim that arbitrary X messages are automatically authenticated. It checks a narrow, fixed set of public examples, not untrusted uploads. Its public-key snapshot was captured on **3 November 2026 UTC**; a fresh key lookup or key rotation can change later results.
+
+## Inspect the public evidence
+
+- [Original signed statement — compact JWS](/demo/official-source-20261103/original.jws)
+- [Readable original statement — JSON](/demo/official-source-20261103/statement.json)
+- [Changed-text fixture — compact JWS](/demo/official-source-20261103/tampered.jws)
+- [Different-signer fixture — compact JWS](/demo/official-source-20261103/wrong-issuer.jws)
+- [Expired fixture — compact JWS](/demo/official-source-20261103/expired.jws)
+- [Public fixture bundle and captured DID document](/demo/official-source-20261103/bundle.json)
+- [Recorded production API responses — 3 November 2026 UTC](/demo/official-source-20261103/api-capture.json)
+- [Current DID document](https://did.is/.well-known/did.json)
+- [Documentation domain-linkage proof](https://docs.did.is/.well-known/did-configuration.json)
+
+These files contain public statements, signatures and public keys only. The controlled different-signer key is not a real third-party account.
+
+## Reproduce with the existing DID.is API
+
+The existing [fast JWS signature endpoint](/reference/api/) resolves the key in the JWS header and verifies its signature. Explicitly request `assertionMethod`. **This endpoint checks signatures, not JWT expiry or your expected issuer policy.** Its `VALID` alone is not an official-source decision. In our recorded run, the different signer and expired statement both have valid signatures; this page rejects them for separate policy reasons.
+
+Save the following as `check-source.mjs` and run `node check-source.mjs` with Node.js 24 or newer. It downloads the public example, calls the existing API once, then independently fixes the expected issuer to `did:web:did.is` and checks dates. No account or API key is needed. It prints the statement but never executes instructions from it.
+
+```js title="check-source.mjs"
+const base = 'https://docs.did.is/demo/official-source-20261103';
+const input = await fetch(`${base}/original-request.json`);
+if (!input.ok) throw new Error('Public input unavailable');
+const response = await fetch('https://did.is/api/v1/fast-verify/jws', {
+  method: 'POST', headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(await input.json()),
+});
+if (!response.ok) throw new Error(`Check unavailable: HTTP ${response.status}`);
+const result = await response.json();
+const p = result.payload;
+const now = Date.now() / 1000;
+const matched = result.status === 'VALID' && result.valid === true
+  && result.signer === 'did:web:did.is'
+  && result.kid === 'did:web:did.is#key-1'
+  && result.relationship === 'assertionMethod'
+  && p?.iss === 'did:web:did.is'
+  && p.purpose === 'public-source-demonstration-only'
+  && Number.isFinite(p.nbf) && Number.isFinite(p.exp)
+  && now >= p.nbf && now < p.exp;
+console.log({ signatureStatus: result.status, expectedSourceMatched: matched,
+  statement: p?.statement });
+if (!matched) process.exitCode = 1;
+```
+
+To compare the controlled negatives, change `original-request.json` to `tampered-request.json`, `wrong-issuer-request.json` or `expired-request.json`. None should match the expected source policy. An HTTP or network failure means **unknown**, never verified. Public limits apply: 20 standard requests per minute and a separate 10-per-minute intensive budget. Do not loop these requests.
+
+For broader integrations, see [linked websites](/build/linked-websites/), [credential verification](/build/credentials/) and [first recipes](/start/recipes/). Each check has a specific boundary; no single badge replaces the evidence.
