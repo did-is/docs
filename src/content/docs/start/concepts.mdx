@@ -62,6 +62,18 @@ Three identifiers resolved against the live API:
 
 A deactivated `did:webvh` returns outcome `DEACTIVATED`, and `integrity` and `keys` become `NOT_APPLICABLE`.
 
+## Graph relations are separate claims
+
+The [evidence graph](/app/evidence-graph/) projects existing resolver evidence for one DID. Its edge states (`VERIFIED`, `OBSERVED`, `DECLARED`, `FAILED`) are distinct from the dimension states above. `VERIFIED` means the check for **that relation** passed, not that the identifier or every connected entity is trusted.
+
+- **Document ID agreement** uses `DID_DOCUMENT_ID_COMPARISON`. It is not a document signature, live proof of private-key possession or legal identity.
+- **Signature and log-proof relations** report their specific cryptographic checks. A valid recorded proof does not by itself establish current authority or permission for an action.
+- **Key, service, alias and controller declarations** describe what the document says. They do not automatically establish endpoint ownership, service behaviour or an action-specific grant.
+
+Per-edge provenance cites `/evidence/...` in the same response and retains the original observation time. Evidence validity dates, log version times and cache delivery time are different concepts. The graph is bounded, may contain cycles, and is not a proof-dependency DAG; omitted relations or missing legacy metadata do not establish absence or completeness.
+
+Recorded public graphs are immutable observations, not the method's signed version history. They can be selected by exact same-DID observation ID and compared even when document hashes match. No older document-only records are backfilled. A stored snapshot hash binds content but does not authenticate the observation clock, prove the latest state or establish current acceptance.
+
 ## Credential checks are separate
 
 Verifying a credential produces its own `checks[]` (structure, issuer, proof, validity, status, audience) and an overall status such as `VALID` or `REVOKED`. These are described on [Credentials](/build/credentials/), not as identifier dimensions.

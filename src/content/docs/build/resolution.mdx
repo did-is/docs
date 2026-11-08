@@ -95,6 +95,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Top-level fields: `did`, `method`, `didDocument`, `didResolutionMetadata`, `didDocumentMetadata`, `verdict`, `dimensions`, `evidence`, `graph`, `trace`, `limitations`, `resolver`, `observedAt`, `cached`.
 
+Graph edges may include relation-level `provenance`; their `evidenceRefs` point into `evidence` in this same response. `graph.coverage` describes the bounded single-DID projection. `VERIFIED` is relation-specific: document ID agreement is not a signature or live private-key possession. Missing metadata on older results remains unknown. See [Evidence graph](/app/evidence-graph/).
+
 Results are cached. Add `?noCache=true` (SDK: `noCache` / `no_cache`) to resolve fresh.
 
 For a shorter answer, `GET /v1/fast-verify/did/{did}` returns `did`, `resolved`, `outcome`, `headline`, `statements`, `dimensions` (id and state only), `keys`, `domainBinding`, `documentSha256`, `observedAt` and `cached`. The SDK methods are `fastVerifyDid` and `fast_verify_did`.
@@ -217,9 +219,11 @@ DID URL paths (`did:web:example.com/path`) are not supported and return `FEATURE
 
 | Endpoint | What it returns |
 | --- | --- |
-| `GET /v1/history/{did}` | Snapshots DID.is recorded for this identifier, coalesced when unchanged. Observations are records, not proofs of history. |
-| `GET /v1/diff/{did}?from=&to=` | A semantic diff between two recorded snapshots (document hashes). Without `from`/`to`, the latest two. |
-| `GET /v1/graph/{did}` | The evidence graph: nodes and edges, each edge with a state. |
+| `GET /v1/history/{did}` | Up to 100 recorded document states, coalesced when the document hash, domain-binding status and canonicalization profile are unchanged; optional `graphHistory` lists up to 50 separate immutable graph references. These are observations, not proofs of complete history. |
+| `GET /v1/diff/{did}` | A semantic diff between the latest two distinct document-state observations, or an exact selected pair. |
+| `GET /v1/graph/{did}` | The current evidence graph, possibly cached. `?observation=gobs:<id>` selects an immutable same-DID recorded graph without fresh resolution. |
+
+For document diffs, `fromObservation=obs:<id>&toObservation=obs:<id>` selects exact row IDs from `history`, including domain-binding changes with the same document hash. Supply both selectors. Legacy `from`/`to` document hashes work only when each is unambiguous; mixed, incomplete or ambiguous selectors return `400 INVALID_REQUEST`. Diff responses include `fromObservation` and `toObservation`. `identical` describes document equality independently of `domainBindingChanged`.
 
 The diff lists added, removed and rotated keys, changed relationships and services, controller and `alsoKnownAs` changes, and the domain binding before and after:
 
@@ -248,6 +252,37 @@ curl https://did.is/api/v1/diff/did:web:did.is
 ```
 
 (Abridged: the response also includes the hashes, observation times and both documents.)
+
+### Select a recorded graph
+
+Read `graphHistory` only when `graphHistoryStatus` is `AVAILABLE`. Each reference contains `id`, `did`, `observedAt`, `snapshotHash`, `nodeCount`, `edgeCount` and `resolverVersion`, ordered newest stored ID first. `graphHistoryNote` states the limits. An absent field on an older resolver is unknown support; `UNAVAILABLE` is not a successful empty history. Legacy document observations are not reconstructed as graphs.
+
+Use direct HTTP for recorded selectors; the SDK examples above and in the [API reference](/reference/api/#evidence-graph) retain their default methods. This `fetch` example selects an actual reference from the same DID's history and rejects a response that did not echo that reference:
+
+```ts
+const did = "did:web:did.is";
+const base = "https://did.is/api";
+const historyResponse = await fetch(`${base}/v1/history/${encodeURIComponent(did)}`);
+if (!historyResponse.ok) throw new Error(`History HTTP ${historyResponse.status}`);
+const history = await historyResponse.json();
+if (history.did !== did || history.graphHistoryStatus !== "AVAILABLE") {
+  throw new Error("Recorded graph history is unavailable");
+}
+const reference = history.graphHistory?.[0];
+if (!reference || reference.did !== did) throw new Error("No recorded graph for this DID");
+const query = new URLSearchParams({ observation: reference.id });
+const response = await fetch(`${base}/v1/graph/${encodeURIComponent(did)}?${query}`);
+if (!response.ok) throw new Error(`Graph HTTP ${response.status}`);
+const graph = await response.json();
+if (graph.did !== did || graph.observation?.id !== reference.id) {
+  throw new Error("Response is not the requested recorded graph");
+}
+console.log(graph.observedAt, graph.nodes.length, graph.edges.length);
+```
+
+The selector must be one canonical `gobs:<positive integer id>`: no signs, leading zeros, padding or overflow. `obs:<id>` document-diff references and hashes are not graph selectors. Unknown or duplicated query parameters and malformed selectors return `400 INVALID_REQUEST`; a missing reference or one belonging to another DID returns `404 NOT_FOUND`. Storage or snapshot-integrity failures are errors, not a live fallback. An older resolver might ignore a selector and return a live `200`; require the exact `observation.id` match before treating it as historical evidence.
+
+Recorded reads make no upstream requests, cache changes or new verification. Their provenance and observation time remain original; evidence validity dates and `did:webvh` version times are separate. Only fresh public resolutions collect graph records, not cache hits, private/project/credential operations or legacy backfill. Configuration-only changes remain separate records even when document hashes match. [Graph collection limits](/app/evidence-graph/#collection-limits) and [recording limits](/app/evidence-graph/#recorded-graphs-and-comparison) explain omissions and storage capacity. Snapshot hashes are not independent timestamps, proof of latestness, current authority or full history.
 
 ## Control claims and directory
 

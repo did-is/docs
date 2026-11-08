@@ -48,6 +48,8 @@ GET /v1/resolve/{did}
 
 Superset of the W3C result: verdict (plain-language headline and statements), seven independently evaluated evidence dimensions, the evidence graph, per-stage telemetry, key/linkage/TLS/history evidence and stated limitations. No scores.
 
+Graph edges may add `provenance`, with JSON pointers into this response's `evidence` and the original observation time. Optional `graph.coverage` describes a bounded single-DID projection, not global completeness. `VERIFIED` is relation-specific; document ID agreement is not a signature or live private-key possession. See [Evidence graph](/app/evidence-graph/).
+
 Budget: **standard**.
 
 | Parameter | In | Description |
@@ -308,7 +310,11 @@ let v: serde_json::Value = reqwest::get("https://did.is/api/v1/fast-verify/did/d
 GET /v1/history/{did}
 ```
 
-Snapshots DID.is recorded for this identifier (coalesced when unchanged). Observations are records, not proofs of history.
+Up to the latest 100 document-state observations for this identifier, newest stored ID first. Consecutive states are coalesced when the document hash, domain-binding status and canonicalization profile are unchanged. `count` and `history` describe these document states, not the separate graph records. Observations are records, not proofs of complete history.
+
+Optional `graphHistory` lists up to the latest **50** immutable same-DID graph references, newest stored ID first. Each reference contains `id` (`gobs:<positive integer id>`), `did`, `observedAt`, `snapshotHash`, `nodeCount`, `edgeCount` and `resolverVersion`. `graphHistoryStatus` is `AVAILABLE` or `UNAVAILABLE`, and `graphHistoryNote` explains collection limits. With `UNAVAILABLE`, `graphHistory` is omitted rather than replaced by a successful empty list. Older responses may omit all three fields; that is unknown support, not complete history.
+
+Graph records are collected only on fresh public resolution, not cache hits or private/project/credential operations. Unchanged document hashes with changed configuration evidence remain separate graph records. Legacy document observations are never backfilled, and private customer stores are not queried. Availability of stored references does not imply uninterrupted collection.
 
 Budget: **standard**.
 
@@ -365,8 +371,12 @@ Budget: **standard**.
 | Parameter | In | Description |
 | --- | --- | --- |
 | `did` (required) | path | The identifier. |
-| `from` | query | Older document hash. |
-| `to` | query | Newer document hash. |
+| `from` | query | Older document hash, only if it identifies one observation unambiguously. |
+| `to` | query | Newer document hash, only if it identifies one observation unambiguously. |
+| `fromObservation` | query | Exact older public document-history reference, `obs:<positive integer id>`. |
+| `toObservation` | query | Exact newer public document-history reference, `obs:<positive integer id>`. |
+
+Supply a complete hash pair or a complete observation-reference pair, never both. Mixed, incomplete, invalid or ambiguous selectors return `400 INVALID_REQUEST`; missing or other-DID observations return `404 NOT_FOUND`. Exact observation references preserve domain-binding changes even when document hashes match. Responses add `fromObservation` and `toObservation`; `identical` means document equality, independently of `domainBindingChanged`. The SDK examples below use the unchanged default comparison; use direct HTTP for exact selectors.
 
 Responses: `200`, `400`, `404`, `429`, `503`.
 
@@ -410,15 +420,44 @@ let v: serde_json::Value = reqwest::get("https://did.is/api/v1/diff/did%3Aweb%3A
 GET /v1/graph/{did}
 ```
 
-The nodes and edges behind a verdict (subject, document, origin, TLS, keys, services, linkage) with the state of every relation. Use it to render or audit why a verdict was reached.
+A bounded single-DID projection of existing resolver evidence: subject, document, origin, TLS, log, keys, services, linkage, aliases and external controllers as applicable. Edges have relation-specific states and may include provenance. The graph may contain cycles; it is not a proof-dependency DAG, global discovery index or action-authorization engine. `VERIFIED` for **resolves to** means document ID agreement, not a signature or live private-key possession. Signature/log-proof relations retain their cryptographic meaning.
 
 Budget: **standard**.
 
 | Parameter | In | Description |
 | --- | --- | --- |
-| `did` (required) | path | The identifier. |
+| `did` (required) | path | The identifier; recorded selectors are scoped to this exact DID. |
+| `observation` | query | Optional exact immutable graph reference, `gobs:<positive integer id>`, from this DID's `graphHistory`. Supply it once. |
 
-Responses: `200`, `400`, `403`, `424`, `429`, `503`.
+Without a selector, returns the current resolution, possibly cached. With a selector, returns stored graph evidence without fresh resolution, upstream requests, cache mutation or re-verification. `observation` is the only accepted query parameter, so `noCache` is not accepted here.
+
+Responses: `200`, `400`, `403`, `404`, `424`, `429`, `500`, `501`, `503`.
+
+Malformed selectors, repeated `observation` or unknown query parameters return `400 INVALID_REQUEST`. The reference must use canonical ASCII digits, without signs, leading zeros, padding or integer overflow; hashes and `obs:<id>` document-history references are not accepted. A missing or other-DID reference returns `404 NOT_FOUND`. Storage or snapshot-integrity failures return an error, not an empty history or a fresh fallback.
+
+Required response fields remain `did`, `observedAt`, `verdict`, `nodes` and `edges`. Additive fields are optional on older/current responses:
+
+| Field | Meaning |
+| --- | --- |
+| `evidence` | Typed public evidence cited by this response's edges, not raw credential payloads. |
+| `coverage` | `scope: SINGLE_DID_EVIDENCE_PROJECTION`, shown/total counts for keys, services, aliases and external controllers, `truncated` and `note`. |
+| `resolver` | Original resolver `name` and `version`. |
+| `observation` | `id`, `did`, `observedAt`, `snapshotHash`, `nodeCount`, `edgeCount` and `resolverVersion` for a stored graph. A selected historical response must echo the exact requested `observation.id`. |
+| `note` | Evidence, collection and history limits. |
+
+Each edge may add `provenance` with profile `didis-graph-evidence-v1`:
+
+| Provenance field | Meaning |
+| --- | --- |
+| `method` | The relation's check or declaration mechanism, not a signing-key identifier. |
+| `evidenceRefs` | JSON pointers into `/evidence/...` in this **same response**, including for selected history. |
+| `observedAt`, `verifier` | Original observation time and resolver name/version; cache delivery does not refresh these. |
+| `sourceUri` | Optional recorded source. |
+| `hashes` | Array of `[scope, digest]` pairs; different input scopes are not interchangeable. |
+| `validFrom`, `validUntil` | Optional supported evidence validity dates, separate from observation time and log version time. |
+| `limitations` | What the relation does not establish. |
+
+The projection is capped at **40 keys, 40 services, 8 aliases and 8 external controllers**; the subject itself is excluded from controller counts. Omitted items and collection gaps do not establish relationship absence. Missing legacy provenance or coverage is unknown, not a passed check or complete coverage. Graph IDs are opaque display references; duplicate service IDs are separate declarations, not verified equivalents. See [the graph guide](/app/evidence-graph/).
 
 <Tabs syncKey="lang">
 <TabItem label="curl">
@@ -455,6 +494,20 @@ let v: serde_json::Value = reqwest::get("https://did.is/api/v1/graph/did%3Aweb%3
 ```
 </TabItem>
 </Tabs>
+
+The SDK examples above use their unchanged default current-graph methods. Select recorded evidence with direct HTTP, using a reference returned for the same DID:
+
+```bash
+# Replace this illustrative id with one from graphHistory for did:web:did.is.
+OBSERVATION='gobs:123'
+curl -s --get \
+  'https://did.is/api/v1/graph/did%3Aweb%3Adid.is' \
+  --data-urlencode "observation=$OBSERVATION"
+```
+
+Require both the requested DID and the exact `observation.id` in the response. An old resolver's live `200` without that match is **not** selected historical evidence. See the [fetch example](/build/resolution/#select-a-recorded-graph).
+
+Each fresh public graph observation is retained separately, including configuration-only changes with unchanged document hashes. Cache hits, private/project/credential operations, raw credential payloads and private watch data are excluded. There is no retroactive backfill, crawling, expiry, overwrite or pruning. Graph storage has a **10,000-row, 64 MiB aggregate serialized-payload and 2 MiB-per-row** safety budget. These logical payload limits are not physical SQLite database or WAL caps. Exhaustion preserves old records and discloses collection gaps without changing live cryptographic verdicts or undoing the independent legacy observation commit. A snapshot SHA-256 binds exact stored bytes; it is not independent evidence, an authenticated observation clock, complete history, proof of latestness or current authority.
 
 ## Credentials and policies
 

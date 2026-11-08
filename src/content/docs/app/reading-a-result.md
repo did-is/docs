@@ -8,7 +8,7 @@ A result page on did.is has four levels. Each adds detail; you can stop at any l
 | Level | Name | What you see |
 | --- | --- | --- |
 | 1 | Verdict | One sentence per evidence dimension, in plain language, including the ones that are not established. |
-| 2 | Evidence graph | Every document, key, origin, certificate and linkage credential as a node, and every relation as a verified, observed or declared edge. See [Evidence graph](/app/evidence-graph/). |
+| 2 | Evidence graph | A bounded view of documents, keys, services, origins and related evidence, with relation-specific states, provenance and collection limits. See [Evidence graph](/app/evidence-graph/). |
 | 3 | Telemetry | The resolution as it happened: DNS pinning, TLS handshake, parsing, hash-chain and signature checks, with real timings. |
 | 4 | Substrate | Raw JSON, multicodec breakdowns, RFC 7638 thumbprints and the exact API calls to reproduce the result. |
 
@@ -20,6 +20,12 @@ The headline describes control, for example:
 - `did:web:did.is`: "Controlled by the operator of did.is; publishes Ed25519 verification keys."
 
 Below it, each of the seven [evidence dimensions](/start/concepts/) shows its state and statement, with what it **proves** and what it **does not prove**. Read the "does not prove" line before relying on a result.
+
+## Level 2: evidence graph
+
+Read a relation's method and **Cited evidence**, not just its `VERIFIED` label. For example, **resolves to** checks that the document `id` matches the DID; it is not a signature or a live test of private-key possession. Provenance retains the original observation time, including on cached and recorded results. Missing metadata is unknown, not a passed check.
+
+Use **All evidence**, **Keys**, **Services**, **Connections**, **Find in this graph** and **Browse evidence** to narrow or read the supplied evidence. **Expand graph** opens a near-viewport **Graph workspace**, not browser fullscreen; **Fit visible graph** fits only the current view. Expanding and closing preserve your exploration state, inline pan/zoom and page scroll. `Escape` closes a detail before the workspace and restores focus. On mobile, use zoom, the list or details when a fitted overview is too small to read. See the [graph guide](/app/evidence-graph/#explore-the-graph) for controls and collection limits.
 
 ## Level 3: telemetry
 
@@ -39,7 +45,11 @@ The same stages are available from [`GET /v1/stream/{did}`](/build/stream/), and
 
 ## History and changes
 
-For identifiers DID.is has seen before, the page shows observation history and what changed between observations (keys added, removed or rotated, services, controller, domain binding). For `did:web` these are DID.is's own records, not proof of what the document contained in the past.
+For identifiers DID.is has seen before, observation history shows recorded document states and semantic changes (keys added, removed or rotated, services, controller, domain binding). For `did:web` these are DID.is's own records, not proof of the document's full past history. Document equality does not imply that domain-binding evidence stayed the same.
+
+Within level 2, **Recorded graphs** offers up to the latest 50 immutable public graph observations, separately from document history. **View recorded graph** and **Compare recorded graphs** select exact same-DID observation IDs, including records with the same document hash but different configuration evidence. They change only the graph panel: the current verdict, telemetry and substrate remain unchanged. The original times and collection gaps remain visible; neither a comparison nor a snapshot hash establishes current validity, authority or complete history.
+
+Only fresh public resolution collects these graphs. Cache hits, private/project/credential operations and older document-only records do not create or backfill graph observations. An unavailable history is not an empty history. See [Recorded graphs and comparison](/app/evidence-graph/#recorded-graphs-and-comparison).
 
 ## Limitations
 
