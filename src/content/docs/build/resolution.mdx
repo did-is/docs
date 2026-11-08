@@ -262,7 +262,8 @@ Use direct HTTP for recorded selectors; the SDK examples above and in the [API r
 ```ts
 const did = "did:web:did.is";
 const base = "https://did.is/api";
-const historyResponse = await fetch(`${base}/v1/history/${encodeURIComponent(did)}`);
+const endpoint = (template: string) => `${base}${template.replace("{did}", encodeURIComponent(did))}`;
+const historyResponse = await fetch(endpoint("/v1/history/{did}"));
 if (!historyResponse.ok) throw new Error(`History HTTP ${historyResponse.status}`);
 const history = await historyResponse.json();
 if (history.did !== did || history.graphHistoryStatus !== "AVAILABLE") {
@@ -271,7 +272,7 @@ if (history.did !== did || history.graphHistoryStatus !== "AVAILABLE") {
 const reference = history.graphHistory?.[0];
 if (!reference || reference.did !== did) throw new Error("No recorded graph for this DID");
 const query = new URLSearchParams({ observation: reference.id });
-const response = await fetch(`${base}/v1/graph/${encodeURIComponent(did)}?${query}`);
+const response = await fetch(`${endpoint("/v1/graph/{did}")}?${query}`);
 if (!response.ok) throw new Error(`Graph HTTP ${response.status}`);
 const graph = await response.json();
 if (graph.did !== did || graph.observation?.id !== reference.id) {
