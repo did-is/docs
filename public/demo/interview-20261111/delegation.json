@@ -1,0 +1,687 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-11-11T10:39:39.256Z",
+  "evidenceClass": "recorded-core-verification",
+  "format": "DID.is Delegation Receipt v1 (experimental)",
+  "notCurrentAuthorization": true,
+  "principals": [
+    {
+      "role": "Demo owner",
+      "did": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni"
+    },
+    {
+      "role": "Helper",
+      "did": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH"
+    },
+    {
+      "role": "Reader",
+      "did": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d"
+    }
+  ],
+  "cases": [
+    {
+      "id": "read",
+      "label": "Within the limits",
+      "changedCondition": "None — positive control",
+      "request": {
+        "chain": [
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rcTFSbVY0WGFxQUJ5azdzSEJUZjFDalFnaE42S2tDdkt6NFhjMmJuY2JIbmkjejZNa3ExUm1WNFhhcUFCeWs3c0hCVGYxQ2pRZ2hONktrQ3ZLejRYYzJibmNiSG5pIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtxMVJtVjRYYXFBQnlrN3NIQlRmMUNqUWdoTjZLa0N2S3o0WGMyYm5jYkhuaSIsImF1ZCI6ImRpZDprZXk6ejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIiwiY2FwIjpbImRlbW86KiJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDoxYzlhYmFmYy1jZDM0LTQzNjMtOGQ4NS0wZGUxNmM0NGRmMTEifQ.y7grxWcX8_3eyxNCa8JSufylrpvFqSa4JHxKdJC21-o3iQPR6G4DayhVfAh7Ht8tN6rIDgCBYzPRLO0aLr3gCA",
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rZ1hXeW90NDhYTkhRcGFQOHp0RjRuN0s3YUN6Vmd2anA5ODNvVTRBVk5hTEgjejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtnWFd5b3Q0OFhOSFFwYVA4enRGNG43SzdhQ3pWZ3ZqcDk4M29VNEFWTmFMSCIsImF1ZCI6ImRpZDprZXk6ejZNa201QzdhNzFFYTVRWnlIYjFzckNFcFI5S2hnaWRrY0pTaWhoaThDS2ZYZzlkIiwiY2FwIjpbImRlbW86cmVhZCJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDo2NWQ0NjU1Yi1jMzg0LTQzZmEtOGE5Yi1iNTQ4ZTU2MWNmOTQiLCJwcmYiOiJmYTg3MWJkNjhjODIzZWMyZDE5OTBkMTNhZDk4OGI3ODJiOTA0NGFkZTY2MGE4Mzg2YTJiMTAyNjJjYzI3M2U2In0.JhhVUkhCy0_N15AOgDDmzfIxU58PfaentIot3_ze_oWjs87fZhetbPG78pzBHuJVFw0-LAJWmLiEcSjJ3u0fAg"
+        ],
+        "tool": "demo:read",
+        "trustedRoots": [
+          "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni"
+        ]
+      },
+      "response": {
+        "authorization": {
+          "agent": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "authorized": true,
+          "decision": "ALLOW",
+          "expires": "2026-11-11T11:39:09Z",
+          "matchedCapability": "demo:read",
+          "reason": "capability 'demo:read' grants 'demo:read'",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "tool": "demo:read"
+        },
+        "chain": {
+          "checks": [
+            {
+              "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is a trusted root",
+              "id": "root",
+              "label": "Trusted root",
+              "status": "PASS"
+            }
+          ],
+          "effectiveCapabilities": [
+            "demo:read"
+          ],
+          "format": "DID.is Delegation Receipt v1 (experimental)",
+          "headline": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni delegated [demo:read] to did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d through 2 verified links.",
+          "leaf": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "limitations": [
+            "Delegation receipts are a DID.is experimental format, not a ratified standard.",
+            "A valid chain proves who delegated what to whom; it does not prove the delegatee behaves within scope."
+          ],
+          "links": [
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "capabilities": [
+                "demo:*"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni → did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "root receipt",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "fa871bd68c823ec2d1990d13ad988b782b9044ade660a8386a2b10262cc273e6",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 0,
+              "issuer": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:1c9abafc-cd34-4363-8d85-0de16c44df11",
+              "kid": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            },
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+              "capabilities": [
+                "demo:read"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH → did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "issuer, proof hash and validity window are contained in the parent",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "every capability is covered by the parent",
+                  "id": "attenuation",
+                  "label": "Capability attenuation",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "ad791ba6892455b34eb4c2775f20835596c318c64cb8e07ce7786943cf3ad1e8",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 1,
+              "issuer": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:65d4655b-c384-43fa-8a9b-b548e561cf94",
+              "kid": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            }
+          ],
+          "notAfter": "2026-11-11T11:39:09Z",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "status": "VALID",
+          "trustedRoot": true
+        }
+      },
+      "capturedAt": "2026-11-11T10:39:39.250Z",
+      "httpStatus": 200,
+      "sourceLabel": "Recorded POST /v1/agents/authorize",
+      "requestSourceUri": "/demo/interview-20261111/delegation-evidence/read-request.json",
+      "responseSourceUri": "/demo/interview-20261111/delegation-evidence/read-response.json"
+    },
+    {
+      "id": "wrong-root",
+      "label": "Different expected owner",
+      "changedCondition": "Expected root only — use a different demonstration principal",
+      "request": {
+        "chain": [
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rcTFSbVY0WGFxQUJ5azdzSEJUZjFDalFnaE42S2tDdkt6NFhjMmJuY2JIbmkjejZNa3ExUm1WNFhhcUFCeWs3c0hCVGYxQ2pRZ2hONktrQ3ZLejRYYzJibmNiSG5pIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtxMVJtVjRYYXFBQnlrN3NIQlRmMUNqUWdoTjZLa0N2S3o0WGMyYm5jYkhuaSIsImF1ZCI6ImRpZDprZXk6ejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIiwiY2FwIjpbImRlbW86KiJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDoxYzlhYmFmYy1jZDM0LTQzNjMtOGQ4NS0wZGUxNmM0NGRmMTEifQ.y7grxWcX8_3eyxNCa8JSufylrpvFqSa4JHxKdJC21-o3iQPR6G4DayhVfAh7Ht8tN6rIDgCBYzPRLO0aLr3gCA",
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rZ1hXeW90NDhYTkhRcGFQOHp0RjRuN0s3YUN6Vmd2anA5ODNvVTRBVk5hTEgjejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtnWFd5b3Q0OFhOSFFwYVA4enRGNG43SzdhQ3pWZ3ZqcDk4M29VNEFWTmFMSCIsImF1ZCI6ImRpZDprZXk6ejZNa201QzdhNzFFYTVRWnlIYjFzckNFcFI5S2hnaWRrY0pTaWhoaThDS2ZYZzlkIiwiY2FwIjpbImRlbW86cmVhZCJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDo2NWQ0NjU1Yi1jMzg0LTQzZmEtOGE5Yi1iNTQ4ZTU2MWNmOTQiLCJwcmYiOiJmYTg3MWJkNjhjODIzZWMyZDE5OTBkMTNhZDk4OGI3ODJiOTA0NGFkZTY2MGE4Mzg2YTJiMTAyNjJjYzI3M2U2In0.JhhVUkhCy0_N15AOgDDmzfIxU58PfaentIot3_ze_oWjs87fZhetbPG78pzBHuJVFw0-LAJWmLiEcSjJ3u0fAg"
+        ],
+        "tool": "demo:read",
+        "trustedRoots": [
+          "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH"
+        ]
+      },
+      "response": {
+        "authorization": {
+          "agent": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "authorized": false,
+          "decision": "DENY",
+          "expires": "2026-11-11T11:39:09Z",
+          "reason": "The chain is invalid and grants nothing: did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is not among the trusted roots.",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "tool": "demo:read"
+        },
+        "chain": {
+          "checks": [
+            {
+              "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is not among the trusted roots",
+              "id": "root",
+              "label": "Trusted root",
+              "status": "FAIL"
+            }
+          ],
+          "effectiveCapabilities": [
+            "demo:read"
+          ],
+          "format": "DID.is Delegation Receipt v1 (experimental)",
+          "headline": "The chain is invalid and grants nothing: did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is not among the trusted roots.",
+          "leaf": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "limitations": [
+            "Delegation receipts are a DID.is experimental format, not a ratified standard.",
+            "A valid chain proves who delegated what to whom; it does not prove the delegatee behaves within scope."
+          ],
+          "links": [
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "capabilities": [
+                "demo:*"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni → did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "root receipt",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "fa871bd68c823ec2d1990d13ad988b782b9044ade660a8386a2b10262cc273e6",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 0,
+              "issuer": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:1c9abafc-cd34-4363-8d85-0de16c44df11",
+              "kid": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            },
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+              "capabilities": [
+                "demo:read"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH → did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "issuer, proof hash and validity window are contained in the parent",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "every capability is covered by the parent",
+                  "id": "attenuation",
+                  "label": "Capability attenuation",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "ad791ba6892455b34eb4c2775f20835596c318c64cb8e07ce7786943cf3ad1e8",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 1,
+              "issuer": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:65d4655b-c384-43fa-8a9b-b548e561cf94",
+              "kid": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            }
+          ],
+          "notAfter": "2026-11-11T11:39:09Z",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "status": "INVALID",
+          "trustedRoot": false
+        }
+      },
+      "capturedAt": "2026-11-11T10:39:39.253Z",
+      "httpStatus": 200,
+      "sourceLabel": "Recorded POST /v1/agents/authorize",
+      "requestSourceUri": "/demo/interview-20261111/delegation-evidence/wrong-root-request.json",
+      "responseSourceUri": "/demo/interview-20261111/delegation-evidence/wrong-root-response.json"
+    },
+    {
+      "id": "outside-scope",
+      "label": "Ask for a different action",
+      "changedCondition": "Requested action only — demo:read becomes demo:write",
+      "request": {
+        "chain": [
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rcTFSbVY0WGFxQUJ5azdzSEJUZjFDalFnaE42S2tDdkt6NFhjMmJuY2JIbmkjejZNa3ExUm1WNFhhcUFCeWs3c0hCVGYxQ2pRZ2hONktrQ3ZLejRYYzJibmNiSG5pIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtxMVJtVjRYYXFBQnlrN3NIQlRmMUNqUWdoTjZLa0N2S3o0WGMyYm5jYkhuaSIsImF1ZCI6ImRpZDprZXk6ejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIiwiY2FwIjpbImRlbW86KiJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDoxYzlhYmFmYy1jZDM0LTQzNjMtOGQ4NS0wZGUxNmM0NGRmMTEifQ.y7grxWcX8_3eyxNCa8JSufylrpvFqSa4JHxKdJC21-o3iQPR6G4DayhVfAh7Ht8tN6rIDgCBYzPRLO0aLr3gCA",
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rZ1hXeW90NDhYTkhRcGFQOHp0RjRuN0s3YUN6Vmd2anA5ODNvVTRBVk5hTEgjejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtnWFd5b3Q0OFhOSFFwYVA4enRGNG43SzdhQ3pWZ3ZqcDk4M29VNEFWTmFMSCIsImF1ZCI6ImRpZDprZXk6ejZNa201QzdhNzFFYTVRWnlIYjFzckNFcFI5S2hnaWRrY0pTaWhoaThDS2ZYZzlkIiwiY2FwIjpbImRlbW86cmVhZCJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDo2NWQ0NjU1Yi1jMzg0LTQzZmEtOGE5Yi1iNTQ4ZTU2MWNmOTQiLCJwcmYiOiJmYTg3MWJkNjhjODIzZWMyZDE5OTBkMTNhZDk4OGI3ODJiOTA0NGFkZTY2MGE4Mzg2YTJiMTAyNjJjYzI3M2U2In0.JhhVUkhCy0_N15AOgDDmzfIxU58PfaentIot3_ze_oWjs87fZhetbPG78pzBHuJVFw0-LAJWmLiEcSjJ3u0fAg"
+        ],
+        "tool": "demo:write",
+        "trustedRoots": [
+          "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni"
+        ]
+      },
+      "response": {
+        "authorization": {
+          "agent": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "authorized": false,
+          "decision": "DENY",
+          "expires": "2026-11-11T11:39:09Z",
+          "reason": "scope violation: no delegated capability grants 'demo:write'",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "tool": "demo:write"
+        },
+        "chain": {
+          "checks": [
+            {
+              "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is a trusted root",
+              "id": "root",
+              "label": "Trusted root",
+              "status": "PASS"
+            }
+          ],
+          "effectiveCapabilities": [
+            "demo:read"
+          ],
+          "format": "DID.is Delegation Receipt v1 (experimental)",
+          "headline": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni delegated [demo:read] to did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d through 2 verified links.",
+          "leaf": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "limitations": [
+            "Delegation receipts are a DID.is experimental format, not a ratified standard.",
+            "A valid chain proves who delegated what to whom; it does not prove the delegatee behaves within scope."
+          ],
+          "links": [
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "capabilities": [
+                "demo:*"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni → did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "root receipt",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "fa871bd68c823ec2d1990d13ad988b782b9044ade660a8386a2b10262cc273e6",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 0,
+              "issuer": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:1c9abafc-cd34-4363-8d85-0de16c44df11",
+              "kid": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            },
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+              "capabilities": [
+                "demo:read"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH → did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "issuer, proof hash and validity window are contained in the parent",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "every capability is covered by the parent",
+                  "id": "attenuation",
+                  "label": "Capability attenuation",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "ad791ba6892455b34eb4c2775f20835596c318c64cb8e07ce7786943cf3ad1e8",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 1,
+              "issuer": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:65d4655b-c384-43fa-8a9b-b548e561cf94",
+              "kid": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            }
+          ],
+          "notAfter": "2026-11-11T11:39:09Z",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "status": "VALID",
+          "trustedRoot": true
+        }
+      },
+      "capturedAt": "2026-11-11T10:39:39.255Z",
+      "httpStatus": 200,
+      "sourceLabel": "Recorded POST /v1/agents/authorize",
+      "requestSourceUri": "/demo/interview-20261111/delegation-evidence/outside-scope-request.json",
+      "responseSourceUri": "/demo/interview-20261111/delegation-evidence/outside-scope-response.json"
+    },
+    {
+      "id": "widened-child",
+      "label": "Helper grants beyond its own limits",
+      "changedCondition": "Child grant only — demo:read becomes other:write, with a new valid signature",
+      "request": {
+        "chain": [
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rcTFSbVY0WGFxQUJ5azdzSEJUZjFDalFnaE42S2tDdkt6NFhjMmJuY2JIbmkjejZNa3ExUm1WNFhhcUFCeWs3c0hCVGYxQ2pRZ2hONktrQ3ZLejRYYzJibmNiSG5pIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtxMVJtVjRYYXFBQnlrN3NIQlRmMUNqUWdoTjZLa0N2S3o0WGMyYm5jYkhuaSIsImF1ZCI6ImRpZDprZXk6ejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIiwiY2FwIjpbImRlbW86KiJdLCJuYmYiOjE3OTQzOTM1NDksImV4cCI6MTc5NDM5NzE0OSwiaWF0IjoxNzk0MzkzNTQ5LCJqdGkiOiJ1cm46dXVpZDoxYzlhYmFmYy1jZDM0LTQzNjMtOGQ4NS0wZGUxNmM0NGRmMTEifQ.y7grxWcX8_3eyxNCa8JSufylrpvFqSa4JHxKdJC21-o3iQPR6G4DayhVfAh7Ht8tN6rIDgCBYzPRLO0aLr3gCA",
+          "eyJhbGciOiJFZERTQSIsInR5cCI6ImRpZGlzLWRlbGVnYXRpb24rand0Iiwia2lkIjoiZGlkOmtleTp6Nk1rZ1hXeW90NDhYTkhRcGFQOHp0RjRuN0s3YUN6Vmd2anA5ODNvVTRBVk5hTEgjejZNa2dYV3lvdDQ4WE5IUXBhUDh6dEY0bjdLN2FDelZndmpwOTgzb1U0QVZOYUxIIn0.eyJpc3MiOiJkaWQ6a2V5Ono2TWtnWFd5b3Q0OFhOSFFwYVA4enRGNG43SzdhQ3pWZ3ZqcDk4M29VNEFWTmFMSCIsImF1ZCI6ImRpZDprZXk6ejZNa201QzdhNzFFYTVRWnlIYjFzckNFcFI5S2hnaWRrY0pTaWhoaThDS2ZYZzlkIiwiY2FwIjpbIm90aGVyOndyaXRlIl0sIm5iZiI6MTc5NDM5MzU0OSwiZXhwIjoxNzk0Mzk3MTQ5LCJpYXQiOjE3OTQzOTM1NDksImp0aSI6InVybjp1dWlkOjY1ZDQ2NTViLWMzODQtNDNmYS04YTliLWI1NDhlNTYxY2Y5NCIsInByZiI6ImZhODcxYmQ2OGM4MjNlYzJkMTk5MGQxM2FkOTg4Yjc4MmI5MDQ0YWRlNjYwYTgzODZhMmIxMDI2MmNjMjczZTYifQ.5ZdUFrP6UjMzCXtRNWrENVgafP3O_bZVk2DM7iU0Sld8B46rIzB8fRPREF-iVT4bRSakZIioEoJ_jq4FBlRSDQ"
+        ],
+        "tool": "demo:read",
+        "trustedRoots": [
+          "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni"
+        ]
+      },
+      "response": {
+        "authorization": {
+          "agent": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "authorized": false,
+          "decision": "DENY",
+          "expires": "2026-11-11T11:39:09Z",
+          "reason": "The chain is invalid and grants nothing: privilege escalation: other:write not granted by the parent.",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "tool": "demo:read"
+        },
+        "chain": {
+          "checks": [
+            {
+              "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni is a trusted root",
+              "id": "root",
+              "label": "Trusted root",
+              "status": "PASS"
+            }
+          ],
+          "effectiveCapabilities": [
+            "other:write"
+          ],
+          "format": "DID.is Delegation Receipt v1 (experimental)",
+          "headline": "The chain is invalid and grants nothing: privilege escalation: other:write not granted by the parent.",
+          "leaf": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+          "limitations": [
+            "Delegation receipts are a DID.is experimental format, not a ratified standard.",
+            "A valid chain proves who delegated what to whom; it does not prove the delegatee behaves within scope."
+          ],
+          "links": [
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "capabilities": [
+                "demo:*"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni → did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "root receipt",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "fa871bd68c823ec2d1990d13ad988b782b9044ade660a8386a2b10262cc273e6",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 0,
+              "issuer": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:1c9abafc-cd34-4363-8d85-0de16c44df11",
+              "kid": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni#z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "VALID"
+            },
+            {
+              "alg": "EdDSA",
+              "audience": "did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d",
+              "capabilities": [
+                "other:write"
+              ],
+              "checks": [
+                {
+                  "detail": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH → did:key:z6Mkm5C7a71Ea5QZyHb1srCEpR9KhgidkcJSihhi8CKfXg9d · 1 capability",
+                  "id": "structure",
+                  "label": "Receipt structure",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "no principal repeats",
+                  "id": "cycle",
+                  "label": "Acyclicity",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "2026-11-11T10:39:09Z → 2026-11-11T11:39:09Z",
+                  "id": "time",
+                  "label": "Validity window",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "issuer, proof hash and validity window are contained in the parent",
+                  "id": "linkage",
+                  "label": "Chain linkage",
+                  "status": "PASS"
+                },
+                {
+                  "detail": "privilege escalation: other:write not granted by the parent",
+                  "id": "attenuation",
+                  "label": "Capability attenuation",
+                  "status": "FAIL"
+                },
+                {
+                  "detail": "EdDSA signature by Ed25519 key did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH (capabilityDelegation)",
+                  "id": "signature",
+                  "label": "Delegator signature",
+                  "status": "PASS"
+                }
+              ],
+              "digest": "28562e277cd5dd98a29d2a39119e0a56f3ee00a9e61f4feea1d3783dbe08b42d",
+              "expires": "2026-11-11T11:39:09Z",
+              "index": 1,
+              "issuer": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "issuerHeadline": "Self-certifying Ed25519 DID; private-key possession not tested.",
+              "jti": "urn:uuid:65d4655b-c384-43fa-8a9b-b548e561cf94",
+              "kid": "did:key:z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH#z6MkgXWyot48XNHQpaP8ztF4n7K7aCzVgvjp983oU4AVNaLH",
+              "notBefore": "2026-11-11T10:39:09Z",
+              "signatureValid": true,
+              "status": "INVALID"
+            }
+          ],
+          "notAfter": "2026-11-11T11:39:09Z",
+          "root": "did:key:z6Mkq1RmV4XaqAByk7sHBTf1CjQghN6KkCvKz4Xc2bncbHni",
+          "status": "INVALID",
+          "trustedRoot": true
+        }
+      },
+      "capturedAt": "2026-11-11T10:39:39.256Z",
+      "httpStatus": 200,
+      "sourceLabel": "Recorded POST /v1/agents/authorize",
+      "requestSourceUri": "/demo/interview-20261111/delegation-evidence/widened-child-request.json",
+      "responseSourceUri": "/demo/interview-20261111/delegation-evidence/widened-child-response.json"
+    }
+  ],
+  "limitations": [
+    "Recorded verification, not current permission: the displayed decisions are the actual captured responses, not a new authorization request or an in-browser chain verifier.",
+    "Every receipt has a finite 60-minute window. The signed bytes are archived without automatic renewal; a later request must be evaluated using the verifier’s own current time.",
+    "The core samples whole-second time before awaited DID resolution, rejects exp < that sampled time, and allows up to 60 seconds of not-before skew. No exclusive-expiry, post-await freshness, or execution-time guarantee is claimed.",
+    "Demo owner, Helper and Reader are role illustrations for throwaway did:key principals, not verified people, organizations or official website signing keys.",
+    "The expected owner is fixed by the demonstration setup. A valid signature alone does not establish an application’s intended trusted root.",
+    "Leaf scope and capability attenuation are different checks: demo:write is outside the valid reader grant, while other:write in the signed child exceeds the parent’s demo:* grant.",
+    "This demonstration submits only stateless verification requests. It does not register delegations or run a tool/action; it does not demonstrate downstream execution enforcement.",
+    "DID.is Delegation Receipt v1 is experimental, not a ratified W3C or IETF standard.",
+    "This is an isolated controlled core capture, not an observation of production configuration, customers, or a deployed service."
+  ],
+  "publicVerificationInputsOnly": true,
+  "engineEvidence": {
+    "binarySha256": "b3076879c577ce0d7312f2b1cac260320278218f25a13b6f4ef411f9674313cc",
+    "sourceBinding": "A successful offline release build confirmed this capture binary was up to date for the unchanged verification-source snapshot. This is not a production observation, fresh-recompilation claim, or reproducible-build attestation.",
+    "sourceLabel": "Isolated DID.is core capture",
+    "endpoint": "/v1/agents/authorize",
+    "method": "POST"
+  }
+}

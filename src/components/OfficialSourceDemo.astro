@@ -1,78 +1,106 @@
 ---
 ---
-<section class="source-demo" aria-label="Signed statement demonstration">
-  <h2>Try changing the message</h2>
-  <p>No login, wallet or payment. These buttons check public demonstration files in your browser using Ed25519 Web Crypto and a <strong>dated public-key snapshot</strong>. They do not contact X or make a fresh DID lookup.</p>
+<section class="source-demo" data-official-source-demo aria-label="Signed statement demonstration">
+  <header class="demo-heading">
+    <p class="kicker">One message · three separate checks</p>
+    <h2>Same words? Same source? Valid at this time?</h2>
+    <p>Start with the original, then change one thing. A real signature can still be from the wrong source.</p>
+  </header>
+  <div class="time-mode">
+    <label for="demo-mode">Choose the time lens</label>
+    <select id="demo-mode" aria-describedby="demo-result-context">
+      <option value="replay" selected>Recorded evidence replay (historical)</option>
+      <option value="current">Check dates at current device time</option>
+    </select>
+  </div>
   <div class="choices" role="group" aria-label="Choose a controlled example">
-    <button data-example="original">1. Original statement</button>
-    <button data-example="tampered">2. Changed text</button>
-    <button data-example="wrong-issuer">3. Different signer</button>
-    <button data-example="unavailable">4. Check unavailable</button>
-    <button data-example="expired">Expired statement</button>
+    <button type="button" data-example="original" aria-pressed="false"><span>1. Original statement</span><span class="choice-note">Same words · expected source</span></button>
+    <button type="button" data-example="tampered" aria-pressed="false"><span>2. Changed text</span><span class="choice-note">New words · old signature</span></button>
+    <button type="button" data-example="wrong-issuer" aria-pressed="false"><span>3. Different signer</span><span class="choice-note">Real signature · other source</span></button>
   </div>
-  <div class="result" aria-live="polite" aria-atomic="true">
-    <p id="demo-state"><strong>Not checked yet</strong></p>
-    <p id="demo-explanation">Choose the original statement first, then compare the changed text and different signer.</p>
+  <div class="choices extra-choices" role="group" aria-label="Test the evidence limits">
+    <span class="edge-label">Two more limits:</span>
+    <button type="button" data-example="unavailable" aria-pressed="false">4. Check unavailable</button>
+    <button type="button" data-example="expired" aria-pressed="false">Expired statement</button>
   </div>
-  <dl>
-    <dt>Expected source (fixed before checking)</dt><dd><code>did:web:did.is</code></dd>
-    <dt>Snapshot captured</dt><dd id="demo-captured">3 November 2026 UTC</dd>
-    <dt>Statement valid until</dt><dd id="demo-expiry">10 November 2026 UTC</dd>
+  <div class="result" aria-live="polite" aria-atomic="true" aria-busy="false" data-outcome="idle">
+    <p id="demo-result-context" class="kicker">Historical replay · not current validity</p>
+    <p id="demo-verdict" class="verdict">Start with the original statement.</p>
+    <p id="demo-explanation">Then compare changed text and a different signer. The default replays the recorded time; it does not establish current validity.</p>
+  </div>
+  <p id="demo-error" class="demo-error" role="alert" hidden></p>
+  <div class="selected-message">
+    <p id="demo-statement-label" class="kicker">Message being checked</p>
+    <p id="demo-statement">Select an example to read its exact statement here.</p>
+  </div>
+  <ol class="flow check-flow" aria-label="How the source decision is made">
+    <li class="flow-step">
+      <span class="flow-index" aria-hidden="true">1</span>
+      <div class="flow-body">
+        <strong class="flow-title">Exact words</strong>
+        <span id="demo-signature-state" class="state" data-status="waiting">Not checked</span>
+        <p id="demo-signature-note" class="flow-text">Does the signature match the message shown?</p>
+      </div>
+    </li>
+    <li class="flow-step">
+      <span class="flow-index" aria-hidden="true">2</span>
+      <div class="flow-body">
+        <strong class="flow-title">Expected source</strong>
+        <span class="flow-text">Expected: <code id="demo-expected-source" class="flow-code">did:web:did.is</code></span>
+        <span class="flow-text">Signed source: <strong id="demo-signer">Not checked</strong></span>
+        <span id="demo-source-state" class="state" data-status="waiting">Not checked</span>
+        <p id="demo-source-note" class="flow-text">The expected website is fixed before checking, not chosen by the signer.</p>
+      </div>
+    </li>
+    <li class="flow-step">
+      <span class="flow-index" aria-hidden="true">3</span>
+      <div class="flow-body">
+        <strong class="flow-title">Date window</strong>
+        <span id="demo-dates-state" class="state" data-status="waiting">Not checked</span>
+        <p id="demo-dates-note" class="flow-text">Is this statement within its allowed dates at the selected time?</p>
+      </div>
+    </li>
+  </ol>
+  <p class="source-strip">Browser signature check · archived public keys · no live lookup.</p>
+  <dl class="time-evidence" aria-label="Selected date check and recorded evidence dates">
+    <div><dt>Dates checked at</dt><dd id="demo-as-of">2026-11-03T21:58:33.730Z (historical replay)</dd></div>
+    <div><dt>Keys captured</dt><dd id="demo-captured">2026-11-03T21:58:33.730Z</dd></div>
+    <div><dt>Original expiry (exclusive)</dt><dd id="demo-expiry">2026-11-10T21:58:33.000Z</dd></div>
   </dl>
-  <details><summary>Read the selected statement and check details</summary><pre id="demo-details">No example selected.</pre></details>
-  <p>Every negative example is a <strong>controlled demonstration fixture</strong>, not a finding about a real account or person. “Check unavailable” deliberately simulates missing evidence; it does not report a live outage.</p>
+  <details class="technical-details"><summary>Dates, limits and full technical result</summary>
+  <p id="demo-mode-note">Historical replay at 2026-11-03T21:58:33.730Z — not current validity. Dates are evaluated at the packaged capture time; signatures are checked now against the archived public keys.</p>
+  <p class="boundary-note">Changing the time lens never renews the original or checks whether its key is still published today. The expired fixture has its own earlier deadline, shown in the date check.</p>
+  <p>Machine state: <code id="demo-state">Not checked yet</code></p><pre id="demo-details">No example selected.</pre>
+  <p class="scope-note">This checks one archived statement's authenticity, not the truth of its claims, legal identity, X account control or permission to act. Every negative is a <strong>controlled demonstration fixture</strong>. “Check unavailable” simulates missing evidence, not a live outage.</p>
+  <p class="local-note">No login, wallet or payment. Ed25519 Web Crypto checks the public examples in your browser; there is no live DID lookup or X account check.</p>
+  </details>
 </section>
 <script>
-  const base = '/demo/official-source-20261103';
-  const state = document.querySelector('#demo-state')!;
-  const explanation = document.querySelector('#demo-explanation')!;
-  const details = document.querySelector('#demo-details')!;
-  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-example]')) {
-    button.addEventListener('click', async () => {
-      state.textContent = 'Checking…';
-      try {
-        const { assess } = await import(/* @vite-ignore */ `${base}/policy.mjs`);
-        const name = button.dataset.example!;
-        if (name === 'unavailable') {
-          const result = assess({ available: false });
-          state.textContent = result.state; explanation.textContent = result.reason;
-          details.textContent = 'Controlled simulation: no network or cryptographic check was performed for this example.'; return;
-        }
-        const response = await fetch(`${base}/bundle.json`);
-        if (!response.ok) throw new Error('Public demonstration bundle unavailable.');
-        const bundle = await response.json();
-        document.querySelector('#demo-captured')!.textContent = bundle.capturedAt;
-        document.querySelector('#demo-expiry')!.textContent = bundle.expiresAt;
-        const [h, p, s] = bundle.fixtures[name].split('.');
-        const bytes = (text: string) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-        const header = JSON.parse(new TextDecoder().decode(bytes(h)));
-        const payload = JSON.parse(new TextDecoder().decode(bytes(p)));
-        const vm = bundle.didDocument.verificationMethod.find((method: {id: string}) => method.id === header.kid);
-        let jwk, signer;
-        if (vm && bundle.didDocument.assertionMethod.includes(header.kid)) {
-          jwk = vm.publicKeyJwk; signer = bundle.didDocument.id;
-        } else if (name === 'wrong-issuer' && header.kid === `did:jwk:${btoa(JSON.stringify(bundle.otherPublicJwk)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')}#0`) {
-          jwk = bundle.otherPublicJwk; signer = header.kid.split('#')[0];
-        } else throw new Error('Key not present in the controlled fixture set.');
-        if (header.alg !== 'EdDSA' || header.typ !== 'JWT') throw new Error('Unexpected demonstration header.');
-        const key = await crypto.subtle.importKey('jwk', jwk, {name: 'Ed25519'}, false, ['verify']);
-        const signatureValid = await crypto.subtle.verify('Ed25519', key, bytes(s), new TextEncoder().encode(`${h}.${p}`));
-        const result = assess({signatureValid, signer, payload});
-        state.textContent = result.state; explanation.textContent = result.reason;
-        details.textContent = JSON.stringify({example: name, signatureValid, signer, expectedIssuer: 'did:web:did.is', payload}, null, 2);
-      } catch {
-        state.textContent = 'UNKNOWN';
-        explanation.textContent = 'The check could not be completed. This browser may not support Ed25519 Web Crypto, or a public file may be unavailable. Do not treat this as verified; use the downloadable API example below.';
-        details.textContent = 'No positive conclusion was made.';
-      }
-    });
+  import { initializeOfficialSourceDemo } from '../lib/officialSourceReplay.mjs';
+  for (const root of document.querySelectorAll<HTMLElement>('[data-official-source-demo]')) {
+    initializeOfficialSourceDemo(root);
+    // Start the fixed positive control, not a live lookup or a renewed signature.
+    root.querySelector<HTMLButtonElement>('[data-example=original]')?.click();
   }
 </script>
 <style>
-  .source-demo{border:1px solid var(--sl-color-gray-4);border-radius:1rem;padding:1.25rem;margin:1.5rem 0;background:var(--sl-color-bg-sidebar)}
-  .source-demo h2{margin-top:0}.choices{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0}
-  button{font:inherit;font-weight:600;color:var(--sl-color-white);background:var(--sl-color-gray-6);border:1px solid var(--sl-color-gray-3);border-radius:.5rem;padding:.65rem .85rem;cursor:pointer}
-  button:hover,button:focus-visible{border-color:var(--sl-color-text-accent);outline:2px solid var(--sl-color-text-accent);outline-offset:2px}
-  .result{border-left:4px solid var(--sl-color-text-accent);padding:.5rem 1rem;margin:1rem 0}.result p{margin:.4rem 0}
-  dt{font-weight:600}dd{margin:0 0 .75rem;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:28rem;overflow:auto;font-size:.8rem}
+  .source-demo{border:1px solid var(--sl-color-gray-4);border-radius:1rem;padding:clamp(1rem,3vw,1.5rem);margin:1.5rem 0;background:var(--sl-color-bg-sidebar);min-width:0}
+  .source-demo p{overflow-wrap:anywhere}.demo-heading h2{margin:0;padding:0;font-size:clamp(1.35rem,3vw,1.75rem);line-height:1.25;letter-spacing:-.025em}.demo-heading>p:last-child{margin:.65rem 0 1.25rem}
+  .source-demo .kicker{margin:0 0 .4rem;font-size:.72rem;font-weight:600;letter-spacing:.05em;color:var(--sl-color-gray-2)}
+  .time-mode{border-top:1px solid var(--hairline);padding-top:1rem}.time-mode label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.5rem}.time-mode select{display:block;width:100%;max-width:100%;min-width:0;font:inherit;color:var(--sl-color-white);background:var(--sl-color-gray-6);border:1px solid var(--sl-color-gray-3);border-radius:.5rem;padding:.65rem .5rem}
+  .time-mode p{font-size:.8rem;line-height:1.5;margin:.5rem 0;color:var(--sl-color-gray-2)}
+  .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:1rem 0 .65rem}.choices button{margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;text-align:left}
+  button{font:inherit;font-size:.9rem;font-weight:600;line-height:1.4;color:var(--sl-color-white);background:var(--sl-color-gray-6);border:1px solid var(--sl-color-gray-3);border-radius:.6rem;padding:.7rem .8rem;cursor:pointer;min-width:0;max-width:100%;overflow-wrap:anywhere}
+  .choice-note{font-size:.75rem;font-weight:400;color:var(--sl-color-gray-2)}button:hover,button:focus-visible,select:focus-visible,summary:focus-visible{border-color:var(--sl-color-text-accent);outline:2px solid var(--sl-color-text-accent);outline-offset:2px}
+  button[aria-pressed="true"]{border-color:var(--sl-color-text-accent);box-shadow:inset 0 0 0 1px var(--sl-color-text-accent);background:var(--sl-color-accent-low)}
+  .extra-choices{display:flex;flex-wrap:wrap;align-items:center;margin:.5rem 0}.extra-choices button{font-size:.8rem;padding:.5rem .65rem}.edge-label{font-size:.78rem;color:var(--sl-color-gray-2)}.local-note{font-size:.8rem;color:var(--sl-color-gray-2);line-height:1.5;margin:.7rem 0}
+  .result{--verdict-color:var(--sl-color-text-accent);border:1px solid var(--hairline);border-left:4px solid var(--verdict-color);border-radius:.7rem;padding:1rem;margin:1.25rem 0 1rem;background:var(--surface)}.result[data-outcome="matched"]{--verdict-color:var(--ok)}.result[data-outcome="rejected"]{--verdict-color:var(--bad)}.result[data-outcome="unknown"]{--verdict-color:var(--warn)}
+  .result .verdict{font-size:clamp(1.15rem,2.8vw,1.4rem);font-weight:600;line-height:1.35;color:var(--verdict-color);margin:.25rem 0 .5rem}.result #demo-explanation{font-size:.88rem;line-height:1.6;margin:.4rem 0 0}.demo-error{border-left:4px solid var(--warn);padding:.5rem 1rem;font-size:.85rem}
+  .source-demo .check-flow{grid-template-columns:repeat(3,minmax(0,1fr));margin:1rem 0!important;gap:.6rem}.check-flow .flow-step{padding:.75rem .7rem;gap:.5rem}.check-flow .flow-title{font-size:.84rem}.check-flow .flow-index{width:1.35rem;height:1.35rem;font-size:.7rem}.check-flow .flow-text{margin:.2rem 0 0;color:var(--sl-color-gray-2);font-size:.76rem;line-height:1.5}.check-flow .state{white-space:normal;width:fit-content;font-family:var(--sl-font);font-size:.72rem;line-height:1.4;margin:.15rem 0}
+  .state[data-status="pass"]{color:var(--ok);background:var(--ok-bg)}.state[data-status="fail"]{color:var(--bad);background:var(--bad-bg)}.state[data-status="unknown"]{color:var(--warn);background:var(--warn-bg)}
+  .selected-message{border:1px solid var(--hairline);border-radius:.65rem;background:var(--surface);padding:.8rem 1rem;margin:1rem 0}.selected-message #demo-statement{margin:.35rem 0 0;font-size:.86rem;line-height:1.65}
+  .time-evidence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0 .5rem}.time-evidence>div{min-width:0}dt{font-size:.76rem;font-weight:600}dd{margin:.25rem 0 0;font-family:var(--sl-font-mono);font-size:.72rem;line-height:1.5;overflow-wrap:anywhere}.boundary-note,.scope-note{font-size:.78rem;color:var(--sl-color-gray-2);line-height:1.55;margin:.6rem 0}
+  .technical-details{border-top:1px solid var(--hairline);margin-top:1rem;padding-top:.8rem}.technical-details summary{font-size:.86rem;font-weight:600;cursor:pointer}.technical-details p{font-size:.8rem}.technical-details pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:28rem;overflow:auto;font-size:.75rem;max-width:100%}
+  .source-strip{font-size:.75rem;line-height:1.55;color:var(--sl-color-gray-2);margin:.75rem 0}
+  @media(max-width:40rem){.choices,.source-demo .check-flow{grid-template-columns:minmax(0,1fr)}.choices button{padding:.65rem .8rem}.choice-note{font-size:.78rem}.check-flow .flow-step{padding:.75rem}.time-evidence{grid-template-columns:minmax(0,1fr);gap:.65rem}.time-evidence dd{font-size:.76rem}}
 </style>

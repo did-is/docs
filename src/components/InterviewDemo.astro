@@ -1,0 +1,129 @@
+---
+import resolution from '../../public/demo/interview-20261111/resolution.json';
+const key = resolution.evidence.keys.find(key => key.id === 'did:web:did.is#key-1');
+const lookupTime = resolution.observedAt.replace('T', ' ').replace('Z', ' UTC');
+---
+<section class="interview-demo not-content" data-interview-demo aria-label="Three questions about verifiable evidence">
+  <div class="tour-heading">
+    <span class="tour-eyebrow">A hands-on technical walkthrough</span>
+    <p>Three questions about verifiable evidence.</p>
+    <span class="tour-intro">Check a message, inspect a relation, then test the limits of a delegation. Start with a working case and change one condition.</span>
+  </div>
+  <nav class="chapter-navigation" aria-label="Walkthrough chapters">
+    <ol>
+      <li><button type="button" data-chapter="source" aria-controls="interview-source" aria-current="step"><span class="chapter-number">1</span><span><strong>Check the source</strong><small>Who signed it?</small></span></button></li>
+      <li><button type="button" data-chapter="evidence" aria-controls="interview-evidence"><span class="chapter-number">2</span><span><strong>Inspect the evidence</strong><small>Why does the link count?</small></span></button></li>
+      <li><button type="button" data-chapter="delegation" aria-controls="interview-delegation"><span class="chapter-number">3</span><span><strong>Check the limits</strong><small>What was delegated?</small></span></button></li>
+    </ol>
+  </nav>
+
+  <section id="interview-source" data-chapter-panel="source" class="chapter-panel" aria-labelledby="interview-source-title">
+    <div class="chapter-heading">
+      <span class="tour-eyebrow">Question 1 · source and exact words</span>
+      <h2 id="interview-source-title" data-chapter-heading tabindex="-1">Who signed these exact words?</h2>
+      <p>Start with <strong>Original statement</strong>. Then choose <strong>Different signer</strong>: its signature is real, but is it the source you expected?</p>
+    </div>
+    <details class="lookup-context">
+      <summary>How does this identifier lead to a key?</summary>
+      <div class="lookup-path"><code>{resolution.did}</code><span aria-hidden="true">→</span><span>Website’s DID document</span><span aria-hidden="true">→</span><code>#key-1</code></div>
+      <p><code>did:web</code> identifies an HTTPS document location. The saved lookup found the document at <code>{resolution.evidence.source.url}</code> and the key listed for <code>assertionMethod</code> — signing statements.</p>
+      <p class="fine-print">Recorded lookup: {lookupTime}. Key type: {key?.curve}. This separate lookup is context, not evidence that the archived statement used a current key. <a href="/demo/interview-20261111/resolution.json">Inspect its original response</a>.</p>
+    </details>
+    <slot />
+    <p class="chapter-takeaway"><span>Takeaway</span> A valid signature, the source you expected, and a valid date window are three separate checks.</p>
+  </section>
+
+  <section id="interview-evidence" data-chapter-panel="evidence" class="chapter-panel" aria-labelledby="interview-evidence-title" hidden>
+    <div class="chapter-heading">
+      <span class="tour-eyebrow">Question 2 · evidence behind a relation</span>
+      <h2 id="interview-evidence-title" data-chapter-heading tabindex="-1">Why does this link count as evidence?</h2>
+      <p>A visible link is not automatically a verified link. <strong>Choose a relationship</strong> to see what the saved lookup actually established.</p>
+    </div>
+    <figure class="evidence-map">
+      <svg viewBox="0 0 760 150" role="img" aria-labelledby="interview-map-title interview-map-desc">
+        <title id="interview-map-title">Three selected relationships from one recorded DID lookup</title>
+        <desc id="interview-map-desc">Website serves document; document lists signing key; key signs a domain-link proof. Select a relationship below to inspect its evidence. This is not a chain of trust.</desc>
+        <defs><marker id="interview-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
+        <g class="map-links" fill="none" marker-end="url(#interview-arrow)">
+          <path data-graph-line="served" d="M146 68H206" />
+          <path data-graph-line="listed" d="M348 68H408" />
+          <path data-graph-line="signed" d="M550 68H610" />
+        </g>
+        <g class="map-node"><rect x="4" y="30" width="142" height="76" rx="10"/><text x="75" y="61">Website</text><text x="75" y="83" class="map-sub">did.is</text></g>
+        <g class="map-node"><rect x="206" y="30" width="142" height="76" rx="10"/><text x="277" y="61">DID document</text><text x="277" y="83" class="map-sub">Public declarations</text></g>
+        <g class="map-node"><rect x="408" y="30" width="142" height="76" rx="10"/><text x="479" y="61">Signing key</text><text x="479" y="83" class="map-sub">#key-1</text></g>
+        <g class="map-node"><rect x="610" y="30" width="142" height="76" rx="10"/><text x="681" y="61">Domain-link proof</text><text x="681" y="83" class="map-sub">One signed credential</text></g>
+        <g class="map-labels"><text x="176" y="25">1</text><text x="378" y="25">2</text><text x="580" y="25">3</text></g>
+      </svg>
+      <figcaption>A small projection of one recorded result — not a chain of trust or a complete network.</figcaption>
+    </figure>
+    <div class="relation-choices" role="group" aria-label="Choose a recorded relationship">
+      <button type="button" data-relation="served" aria-pressed="false"><span class="choice-index">1</span><strong>Website → document</strong><span>Was it fetched?</span><small data-relation-state="served">Not loaded</small></button>
+      <button type="button" data-relation="listed" aria-pressed="true"><span class="choice-index">2</span><strong>Document → key</strong><span>Was it listed?</span><small data-relation-state="listed">Not loaded</small></button>
+      <button type="button" data-relation="signed" aria-pressed="false"><span class="choice-index">3</span><strong>Key → link proof</strong><span>Was its signature checked?</span><small data-relation-state="signed">Not loaded</small></button>
+    </div>
+    <div class="evidence-result" data-graph-result data-tone="unknown" aria-live="polite" aria-atomic="true" aria-busy="false">
+      <div class="result-top"><span class="recorded-label">Recorded DID.is API result</span><strong class="result-state" data-graph-state>Not checked</strong></div>
+      <h3 data-graph-headline>Choose a relationship to inspect.</h3>
+      <p class="result-description" data-graph-summary>No positive conclusion has been made.</p>
+      <div class="result-boundary"><strong>What this does not establish</strong><p data-graph-boundary>The graph explains the evidence. It does not create another proof.</p></div>
+      <dl class="record-metadata"><div><dt>Source</dt><dd data-graph-source>Not established</dd></div><div><dt>Observed at</dt><dd data-graph-time>Not established</dd></div></dl>
+    </div>
+    <details class="technical-record"><summary>Inspect this relation’s original evidence</summary><p>The check method and evidence references below belong to this exact captured response, not a new verification.</p><pre data-graph-raw>No relation selected.</pre><p><a href="/demo/interview-20261111/graph.json">Full recorded Graph response</a> · <a href="/demo/interview-20261111/provenance.json">Capture details and file hashes</a></p></details>
+    <p class="chapter-takeaway"><span>Takeaway</span> “Declared”, “observed” and “verified” answer different questions. Open the evidence before relying on a label.</p>
+    <a class="guide-link" href="/app/evidence-graph/">Explore the full evidence Graph →</a>
+  </section>
+
+  <section id="interview-delegation" data-chapter-panel="delegation" class="chapter-panel" aria-labelledby="interview-delegation-title" hidden>
+    <div class="chapter-heading">
+      <span class="tour-eyebrow">Question 3 · the limits of a delegation</span>
+      <h2 id="interview-delegation-title" data-chapter-heading tabindex="-1">Can a delegate go beyond its limits?</h2>
+      <p>The demo owner delegates a limited grant to a helper, then a reader. <strong>Start within the limits</strong>, then change one condition.</p>
+    </div>
+    <div class="delegation-map" aria-label="Illustration of the three demo roles, not verified legal identities"><div><span class="actor-symbol" aria-hidden="true">A</span><strong>Demo owner</strong><small>Starts the signed chain</small></div><span class="role-arrow" aria-hidden="true">→</span><div><span class="actor-symbol" aria-hidden="true">B</span><strong>Helper</strong><small>Delegates within its grant</small></div><span class="role-arrow" aria-hidden="true">→</span><div><span class="actor-symbol" aria-hidden="true">C</span><strong>Reader</strong><small>Requests an action</small></div></div>
+    <p class="map-caption"><strong>Separate recorded example:</strong> three disposable <code>did:key</code> identities, not the website’s signing key. The application chooses the starting owner to trust.</p>
+    <div class="delegation-choices" role="group" aria-label="Choose one delegation condition">
+      <button type="button" data-delegation-case="read" aria-pressed="true"><strong>Within the limits</strong><span>Read · expected owner</span></button>
+      <button type="button" data-delegation-case="wrong-root" aria-pressed="false"><strong>Different expected owner</strong><span>Same chain · change the root</span></button>
+      <button type="button" data-delegation-case="outside-scope" aria-pressed="false"><strong>Ask to write instead</strong><span>Same chain · different action</span></button>
+      <button type="button" data-delegation-case="widened-child" aria-pressed="false"><strong>Delegate too much</strong><span>Genuine signature · wider claim</span></button>
+    </div>
+    <p class="changed-condition" data-delegation-change>No change — start with the read request.</p>
+    <div class="evidence-result" data-delegation-result data-tone="unknown" aria-live="polite" aria-atomic="true" aria-busy="false">
+      <div class="result-top"><span class="recorded-label">Recorded verification · not current permission</span><strong class="result-state" data-delegation-decision>Not checked</strong></div>
+      <h3 data-delegation-headline>Select a recorded check.</h3>
+      <p class="result-description" data-delegation-explanation>This page does not approve or execute a task.</p>
+      <dl class="request-summary"><div><dt>Requested capability</dt><dd><code data-delegation-tool>Not established</code></dd></div><div><dt>Recorded at</dt><dd data-delegation-time>Not established</dd></div><div><dt>Chain deadline in the record</dt><dd data-delegation-expiry>Not established</dd></div></dl>
+      <ol class="delegation-checks" aria-label="Separate checks reported by the recorded verification">
+        {['Signatures', 'Expected owner', 'Parent limits', 'Requested action', 'Dates at capture'].map(label => <li data-delegation-check data-status="unknown"><strong data-check-label>{label}</strong><span data-check-text>Not established</span></li>)}
+      </ol>
+    </div>
+    <p class="no-execution"><strong>Verification only.</strong> These are recorded answers from the real verifier, not a new browser verification or a current grant. No action runs. The receipt format is DID.is Delegation Receipt v1 (experimental).</p>
+    <details class="technical-record"><summary>Inspect the exact request and recorded answer</summary><p>Role illustration → actual recorded DID:</p><pre data-delegation-principals>Not established</pre><p>Application-selected trusted root(s):</p><pre class="root-value" data-delegation-root>Not established</pre><p>Receipt SHA-256 digests are compared with the captured per-link digests to bind the displayed request to its recorded answer. This is a consistency check, not new signature verification or a trusted timestamp.</p><p>Different-root, leaf-scope and parent-attenuation failures are separate cases. A modified payload with an old signature would only demonstrate a signature failure.</p><pre data-delegation-raw>No recorded case selected.</pre><p>The dates above describe the captured verifier’s time profile, not execution-time enforcement. <a href="/demo/interview-20261111/delegation.json">Download the public inputs and captured answers</a> · <a href="/reference/delegation-receipts/">Receipt format</a></p></details>
+    <p class="chapter-takeaway"><span>Takeaway</span> Correct signatures do not replace the expected authority, parent limits or the requested action’s scope.</p>
+    <a class="guide-link" href="/app/delegation/">Open the receipt inspector guide →</a>
+  </section>
+
+  <footer class="tour-footer"><button type="button" data-chapter-prev disabled>← Previous</button><span data-chapter-progress aria-live="polite">Chapter 1 of 3</span><button type="button" data-chapter-next><span data-chapter-next-label>Next: inspect the evidence</span> →</button></footer>
+  <noscript><p>JavaScript is required for the interactive checks. The <a href="/demo/official-source-20261103/bundle.json">public statement bundle</a>, <a href="/demo/interview-20261111/graph.json">recorded Graph</a> and <a href="/demo/interview-20261111/delegation.json">delegation records</a> remain available for inspection.</p></noscript>
+</section>
+<script>
+  import { initializeInterviewDemo } from '../lib/interviewDemo.mjs';
+  for (const root of document.querySelectorAll<HTMLElement>('[data-interview-demo]')) initializeInterviewDemo(root);
+</script>
+<style>
+  .interview-demo{border:1px solid var(--sl-color-gray-4);border-radius:1rem;background:var(--sl-color-bg-sidebar);margin:1.5rem 0 2rem;min-width:0;scroll-margin-top:6rem;color:var(--sl-color-white);font-family:var(--sl-font)}
+  .interview-demo [hidden]{display:none!important}.interview-demo :is(p,h2,h3,figure,ol){margin:0}.interview-demo button{font:inherit;cursor:pointer;min-width:0;color:inherit;line-height:1.4}.interview-demo :is(button,summary,a):focus-visible{outline:2px solid var(--sl-color-text-accent);outline-offset:3px}.interview-demo :is(p,small,strong,code,dd,pre){overflow-wrap:anywhere}
+  .tour-heading{padding:1.5rem 1.5rem 1.2rem}.tour-eyebrow{font-size:.72rem;letter-spacing:.04em;color:var(--sl-color-gray-2);font-weight:600}.tour-heading>p{font-size:clamp(1.3rem,3vw,1.65rem);font-weight:600;line-height:1.3;margin:.4rem 0 .6rem}.tour-intro{display:block;color:var(--sl-color-gray-2);font-size:.9rem;line-height:1.6;max-width:42rem}
+  .chapter-navigation{padding:0 1.5rem 1.25rem}.chapter-navigation ol{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem}.chapter-navigation li{margin:0;min-width:0}.chapter-navigation button{border:1px solid var(--sl-color-gray-4);background:var(--surface);border-radius:.7rem;display:flex;align-items:flex-start;text-align:left;gap:.55rem;width:100%;height:100%;padding:.8rem .65rem}.chapter-navigation button[aria-current="step"]{background:var(--sl-color-accent-low);border-color:var(--sl-color-text-accent);box-shadow:inset 0 0 0 1px var(--sl-color-text-accent)}.chapter-navigation strong{display:block;font-size:.81rem;font-weight:600}.chapter-navigation small{display:block;font-size:.71rem;color:var(--sl-color-gray-2);margin-top:.25rem;line-height:1.4}.chapter-number{flex:none;display:grid;place-items:center;width:1.3rem;height:1.3rem;background:var(--sl-color-gray-6);border-radius:50%;font-size:.72rem;font-weight:600}
+  .chapter-panel{border-top:1px solid var(--hairline);padding:1.5rem;min-width:0}.chapter-heading h2{font-size:clamp(1.3rem,3vw,1.65rem);line-height:1.3;letter-spacing:-.02em;margin:.4rem 0 .65rem;padding:0}.chapter-heading h2:focus{outline:none}.chapter-heading>p{font-size:.9rem;line-height:1.65;color:var(--sl-color-gray-2);max-width:42rem}.lookup-context{border:1px solid var(--hairline);border-radius:.6rem;padding:.7rem .85rem;margin:1rem 0;font-size:.82rem}.lookup-context summary{font-weight:600;cursor:pointer}.lookup-context p{margin:.75rem 0 0;line-height:1.6}.lookup-path{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:1rem}.fine-print{font-size:.76rem;color:var(--sl-color-gray-2)}
+  .chapter-panel :global(.source-demo){border:0;padding:0;margin:1.2rem 0;border-radius:0;background:transparent}.chapter-panel :global(.demo-heading){display:none}.chapter-panel :global(.time-mode){border-top:0;padding-top:0}.chapter-panel :global(.time-mode label){font-size:.78rem;color:var(--sl-color-gray-2)}.chapter-panel :global(.time-mode select){font-size:.85rem}
+  .chapter-takeaway{border-top:1px solid var(--hairline);padding-top:1rem;margin-top:1.25rem!important;font-size:.88rem;line-height:1.65}.chapter-takeaway>span{display:block;font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--sl-color-text-accent);margin-bottom:.3rem}.guide-link{display:inline-block;font-size:.8rem;margin-top:.8rem;text-underline-offset:3px}
+  .evidence-map{margin:1.25rem 0!important;background:var(--surface);border:1px solid var(--hairline);border-radius:.7rem;padding:.65rem}.evidence-map svg{display:block;width:100%;height:auto}.evidence-map figcaption{font-size:.72rem;color:var(--sl-color-gray-2);line-height:1.55;padding:0 .4rem .3rem}.map-node rect{fill:var(--sl-color-gray-6);stroke:var(--sl-color-gray-4);stroke-width:1}.map-node text{fill:var(--sl-color-white);font-size:14px;font-weight:600;text-anchor:middle}.map-node .map-sub{font-size:11px;font-weight:400;fill:var(--sl-color-gray-2)}.map-links path{stroke:var(--sl-color-gray-4);stroke-width:2}.map-links path[data-selected="true"]{stroke:var(--sl-color-text-accent);stroke-width:4}#interview-arrow path{fill:var(--sl-color-gray-3)}.map-labels text{text-anchor:middle;font-size:12px;fill:var(--sl-color-gray-2)}
+  .relation-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin:1rem 0}.relation-choices button,.delegation-choices button{border:1px solid var(--sl-color-gray-4);border-radius:.65rem;background:var(--surface);padding:.75rem;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:.25rem;margin:0}.relation-choices button[aria-pressed="true"],.delegation-choices button[aria-pressed="true"]{border-color:var(--sl-color-text-accent);box-shadow:inset 0 0 0 1px var(--sl-color-text-accent);background:var(--sl-color-accent-low)}.relation-choices strong,.delegation-choices strong{font-size:.8rem;font-weight:600}.relation-choices button>span:not(.choice-index),.delegation-choices button>span{font-size:.73rem;color:var(--sl-color-gray-2)}.choice-index{font-size:.7rem;color:var(--sl-color-text-accent);font-weight:600}.relation-choices small{font-family:var(--sl-font-mono);font-size:.64rem;letter-spacing:.02em;margin-top:.35rem}
+  .evidence-result{--result-accent:var(--neutral);border:1px solid var(--hairline);border-left:4px solid var(--result-accent);border-radius:.75rem;padding:1.1rem;background:var(--surface);margin:1rem 0}.evidence-result[data-tone="verified"],.evidence-result[data-tone="allowed"]{--result-accent:var(--ok)}.evidence-result[data-tone="denied"]{--result-accent:var(--bad)}.evidence-result[data-tone="observed"]{--result-accent:var(--info)}.evidence-result[data-tone="unknown"]{--result-accent:var(--warn)}.result-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.75rem}.recorded-label{font-size:.67rem;font-weight:500;line-height:1.5;color:var(--sl-color-gray-2)}.result-state{color:var(--result-accent);font-size:.7rem;font-weight:600;line-height:1.4}.evidence-result h3{font-size:clamp(1.1rem,2.5vw,1.3rem);line-height:1.35;letter-spacing:-.015em;font-weight:600}.result-description{font-size:.87rem;line-height:1.7;margin:.65rem 0!important}.result-boundary{border-top:1px solid var(--hairline);padding-top:.8rem;margin-top:.9rem}.result-boundary>strong{font-size:.73rem;font-weight:600}.result-boundary p{font-size:.8rem;color:var(--sl-color-gray-2);line-height:1.6;margin-top:.25rem}.record-metadata,.request-summary{display:grid;grid-template-columns:1fr;gap:.65rem;margin:1rem 0 0}.record-metadata>div,.request-summary>div{min-width:0}.record-metadata dt,.request-summary dt{font-size:.68rem;color:var(--sl-color-gray-2)}.record-metadata dd,.request-summary dd{margin:.2rem 0 0;font-size:.72rem;line-height:1.5;font-family:var(--sl-font-mono)}
+  .technical-record{margin:1rem 0;font-size:.8rem;min-width:0}.technical-record summary{cursor:pointer;font-weight:600;padding:.5rem 0}.technical-record p{margin:.6rem 0;line-height:1.65;color:var(--sl-color-gray-2)}.technical-record pre{font-size:.7rem;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--hairline);border-radius:.5rem;padding:.75rem;max-height:24rem;overflow:auto;max-width:100%;margin:.65rem 0}.technical-record pre.root-value{max-height:8rem}
+  .delegation-map{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:.4rem;margin:1.25rem 0 .6rem;padding:1rem .7rem;border:1px solid var(--hairline);border-radius:.7rem;background:var(--surface)}.delegation-map>div{text-align:center;min-width:0}.actor-symbol{display:grid;width:1.9rem;height:1.9rem;place-items:center;margin:0 auto .5rem;background:var(--sl-color-accent-low);color:var(--sl-color-text-accent);border:1px solid var(--sl-color-gray-4);border-radius:50%;font-size:.8rem;font-weight:600}.delegation-map strong{display:block;font-size:.85rem;font-weight:600}.delegation-map small{display:block;font-size:.68rem;line-height:1.5;color:var(--sl-color-gray-2);margin-top:.25rem}.role-arrow{font-size:1.2rem;color:var(--sl-color-gray-3)}.map-caption{font-size:.74rem;line-height:1.6;color:var(--sl-color-gray-2);margin:.6rem 0 1rem!important}.delegation-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:1rem 0 .75rem}.changed-condition{font-size:.8rem;line-height:1.6;color:var(--sl-color-gray-2);min-height:2.6em}.request-summary{grid-template-columns:1fr 1fr}.request-summary>div:last-child{grid-column:1/-1}.delegation-checks{list-style:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin-top:1rem!important}.delegation-checks li{border:1px solid var(--hairline);border-radius:.5rem;padding:.65rem;margin:0;min-width:0}.delegation-checks strong{display:block;font-size:.73rem;font-weight:600;margin-bottom:.3rem}.delegation-checks span{display:block;font-size:.72rem;line-height:1.5}.delegation-checks li[data-status="pass"] span{color:var(--ok)}.delegation-checks li[data-status="fail"] span{color:var(--bad)}.delegation-checks li[data-status="unknown"] span{color:var(--sl-color-gray-2)}.no-execution{font-size:.76rem;line-height:1.7;color:var(--sl-color-gray-2);margin:1rem 0!important}.no-execution strong{color:var(--sl-color-white)}
+  .tour-footer{display:flex;justify-content:space-between;align-items:center;gap:.8rem;border-top:1px solid var(--hairline);padding:1rem 1.5rem}.tour-footer button{font-size:.76rem;font-weight:600;border:1px solid var(--sl-color-gray-4);border-radius:.5rem;padding:.6rem .7rem;background:var(--surface);text-align:left}.tour-footer button:disabled{opacity:.5;cursor:default}.tour-footer>span{font-size:.7rem;white-space:nowrap;color:var(--sl-color-gray-2)}
+  @media(max-width:40rem){.tour-heading{padding:1.1rem 1rem 1rem}.chapter-navigation{padding:0 1rem 1rem}.chapter-navigation ol{grid-template-columns:1fr;gap:.4rem}.chapter-navigation button{align-items:center;padding:.65rem .7rem}.chapter-navigation button>span:last-child{display:flex;align-items:center;flex:1;justify-content:space-between;gap:.5rem}.chapter-navigation small{margin:0;text-align:right;font-size:.69rem}.chapter-panel{padding:1.1rem 1rem}.evidence-map svg{display:none}.evidence-map{padding:.75rem}.evidence-map figcaption{padding:0}.relation-choices{grid-template-columns:1fr;gap:.45rem}.relation-choices button{display:grid;grid-template-columns:1.1rem 1fr auto;align-items:center;gap:.2rem .4rem}.relation-choices button>span:not(.choice-index){grid-column:2/3}.relation-choices small{grid-column:3/4;grid-row:1/3;margin:0;font-size:.61rem}.choice-index{grid-row:1/3}.evidence-result{padding:.85rem}.delegation-map{padding:.8rem .5rem}.delegation-map small{font-size:.64rem}.delegation-map strong{font-size:.76rem}.delegation-choices{grid-template-columns:1fr}.delegation-choices button{padding:.65rem .75rem;gap:.25rem}.delegation-checks{grid-template-columns:1fr}.request-summary{grid-template-columns:1fr}.tour-footer{padding:.85rem 1rem;flex-wrap:wrap;gap:.6rem}.tour-footer>span{order:-1;flex:1 0 100%;text-align:center}.tour-footer button:last-child{margin-left:auto;max-width:65%}}
+</style>

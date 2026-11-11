@@ -1,42 +1,84 @@
 ---
-title: An official-source demonstration
-description: Check one statement signed by the DID.is website key, then compare changed text and a different signer. Account links and signatures prove different things.
+title: From an identifier to verifiable evidence
+description: Check who signed a message, inspect the evidence behind a relation, and see why a signed delegation can still be refused.
+tableOfContents: false
 ---
 
 import OfficialSourceDemo from '../../../components/OfficialSourceDemo.astro';
+import InterviewDemo from '../../../components/InterviewDemo.astro';
 
 ## Is this message from the source I expected?
 
-A familiar name or profile picture is easy to copy. A signature gives you a different check: **did the expected source's published key sign these exact words?** Change the words, and the signature no longer matches. Use a different signer, and even a valid signature is not from the source you expected.
+A familiar name is easy to copy. Start with **DID.is's own public demonstration**: compare unchanged words, changed words and a genuine signature from a different source. Then inspect a real relationship and the limits of a signed delegation. Recorded evidence is labeled throughout — **not proof of validity today**.
 
-This page demonstrates that distinction using **our own service**, not a customer or an accusation about another account. Start from a website address you already know is correct. The brand name and this page do not independently establish who legally operates the website.
+<InterviewDemo>
+<OfficialSourceDemo />
+</InterviewDemo>
+
+## Three questions, three kinds of evidence
+
+- **Source:** did the expected key sign these exact words, within the selected dates?
+- **Relation:** what was declared, what was observed, and which proof was actually checked?
+- **Delegation:** do the expected authority, parent limits and requested action match?
+
+Allow about six minutes for the full walkthrough, or stop after any question. The first chapter checks signatures in your browser with archived public keys. The next chapters read actual recorded API results, not new live verifications. No task is approved or executed.
+
+Want to continue? Open the [DID result](https://did.is/did:web:did.is), the [Graph guide](/app/evidence-graph/), or the [receipt inspector guide](/app/delegation/). A current lookup is a separate experiment; it does not renew the archived statement or delegation.
+
+<details class="demo-reference">
+<summary>Statement reference, source links and API reproduction</summary>
+
+## A two-minute walkthrough
+
+1. Keep **Recorded evidence replay (historical)** and click **Original statement**. “These words matched at the recorded time”: the signature, expected source and dates match at `2026-11-03T21:58:33.730Z`, not necessarily today. Technical state: `MATCHED`.
+2. Click **Changed text**. “The words changed. The signature fails.” The old signature cannot cover the new words. State: `REJECTED`.
+3. Click **Different signer**. “A real signature — from a different source.” This key genuinely signed its own statement, but it is not the expected DID.is website key. State: `REJECTED`.
+4. Click **Check unavailable**. “No conclusion — this is not a pass.” The button simulates missing evidence, not a live outage or an accusation. State: `UNKNOWN`.
+5. Click **Expired statement**. The signature matches, but this fixture's earlier deadline has passed in **both modes**. State: `REJECTED`.
+6. Select **Check dates at current device time** and choose **Original statement**. A mode change also rechecks your selected example. At or after **10 November 2026 at 21:58:33 UTC**, including **13 November**, the original is `REJECTED` despite its matching signature. Switch back to replay to reproduce the historical match, not to renew it.
+
+**The time lens changes the question, not the evidence.** **Dates checked at (asOf)** is the time passed to the acceptance policy. **Archived public keys captured** is when the key snapshot was recorded. Both modes check signatures in your browser now; neither looks up a live DID document. Replay uses the capture time. Current mode uses your device clock, which is not a trusted external clock.
+
+The original expiry stays **`2026-11-10T21:58:33.000Z` (exclusive)**. Replay neither extends it nor establishes that the key is still published today. The fresh API run below is a different experiment: current key resolution **and** current dates.
+
+## What the result means
+
+<div class="proof-pair">
+  <div class="pp-yes">
+    <h4>When this policy accepts a statement</h4>
+    <ul>
+      <li>Its exact words match the archived website public key.</li>
+      <li>Its signed source matches the expected DID.is source.</li>
+      <li>Its date window includes the displayed evaluation time.</li>
+    </ul>
+  </div>
+  <div class="pp-no">
+    <h4>What a match does not prove</h4>
+    <ul>
+      <li>A real signature from another key is not expected provenance.</li>
+      <li>A historical match is not current validity.</li>
+      <li>Authenticity does not establish content truth or permission to act.</li>
+    </ul>
+  </div>
+</div>
+
+## Website and X links are different evidence
+
+Start from a website address you already know is correct. The brand name and this page do not independently establish who legally operates the website.
 
 **Our declared public sources:** [DID.is website](https://did.is/) · [DID.is on X — @didishq](https://x.com/didishq) · [DID.is identifier](https://did.is/did:web:did.is).
 
 The DID.is website links to @didishq in its footer. That is a **website operator's account declaration**. The [public @didishq post](https://x.com/didishq/status/2117758329175097403), independently retrieved from X on **3 November 2026 at 23:20 UTC**, links back to `did.is` and this demonstration page. Its text declares the official sources and says: “Changed words fail; a different signer is not us. Links do not verify every message.”
 
-These are **reciprocal public references**, not an X OAuth account-control check or an automated linked-account `CONFIRMED` result. No X OAuth verification has been performed. The post points to this demonstration; it is not itself the exact signed statement below, and it does not make every post a signed message.
-
-<OfficialSourceDemo />
-
-## A two-minute walkthrough
-
-1. Click **Original statement**. While it is in date, the result is **MATCHED**: these exact bytes match the captured website key and the expected issuer.
-2. Click **Changed text**. The result is **REJECTED**: the words changed, but the signature did not.
-3. Click **Different signer**. The signature itself is valid, yet the result is **REJECTED**: it is not the expected DID.is issuer. Anyone can create a valid signature with their own key.
-4. Click **Check unavailable**. The result is **UNKNOWN**, not a pass and not a claim that someone is malicious.
-
-The fifth example is correctly signed but expired. It is rejected by this demonstration's date policy. The original also stops matching after **10 November 2026 at 21:58:33 UTC**; it is an intentionally short-lived example, not an automatically renewed endorsement.
-
-## What the evidence does — and does not — establish
+These are **reciprocal public references**, not an X OAuth account-control check or an automated linked-account `CONFIRMED` result. No X OAuth verification has been performed. The post points to this demonstration; it is not itself the exact signed statement shown above, and it does not make every post a signed message.
 
 | Evidence | What it establishes | What it does not establish |
 | --- | --- | --- |
 | Website footer and links on this page | The website declares @didishq as its X account. | Independent control of the X account, or an X OAuth check. |
 | Public @didishq post, independently retrieved from X on 3 November 2026 UTC | The X account publicly points back to `did.is` and this demonstration: reciprocal public references. | An X OAuth account-control check, an automated linked-account `CONFIRMED` result, or a signature on every post. |
 | DID.is ↔ docs.did.is domain-linkage proof | The published DID key links the website and documentation origin, within the proof's validity. | X account ownership or legal identity. |
-| This signed statement | One exact statement matches a key published for `did:web:did.is`, using the dated snapshot shown. | That every X post or other message has a signature, that every claim is true, or that a message grants permission to act. |
-| Expected-issuer and date policy | A different issuer or expired statement is not accepted as this demonstration's official source. | A general authentication, access-control or fraud-detection system. |
+| This signed statement | One exact statement matches the captured key for `did:web:did.is`, using the dated snapshot shown. | Current key publication or validity, a signature on every X post, the truth of every claim, or permission to act. |
+| Expected-issuer and date policy | A different issuer or a statement outside its validity dates at the displayed evaluation time is not accepted. | A historical replay result establishing current validity, or a general authentication, access-control or fraud-detection system. |
 
 This is **not legal certification**, an authentication challenge, a credential granting access, a payment instruction, or an authorization token. Do not use any of these files to authorize actions. Missing evidence is uncertainty, not evidence of maliciousness.
 
@@ -61,7 +103,9 @@ These files contain public statements, signatures and public keys only. The cont
 
 The existing [fast JWS signature endpoint](/reference/api/) resolves the key in the JWS header and verifies its signature. Explicitly request `assertionMethod`. **This endpoint checks signatures, not JWT expiry or your expected issuer policy.** Its `VALID` alone is not an official-source decision. In our recorded run, the different signer and expired statement both have valid signatures; this page rejects them for separate policy reasons.
 
-Save the following as `check-source.mjs` and run `node check-source.mjs` with Node.js 24 or newer. It downloads the public example, calls the existing API once, then independently fixes the expected issuer to `did:web:did.is` and checks dates. No account or API key is needed. It prints the statement but never executes instructions from it.
+Save the following as `check-source.mjs` and run `node check-source.mjs` with Node.js 24 or newer. It downloads the public example, calls the existing API once using current key resolution, then independently fixes the expected issuer to `did:web:did.is` and checks dates against **the actual current time (`Date.now()`)**. No account or API key is needed. It prints the statement but never executes instructions from it.
+
+**This fresh run is not the browser's historical replay.** At or after **10 November 2026 at 21:58:33 UTC**, this original must print `expectedSourceMatched: false` and exit with code 1 if the API check completes, even if the API still reports a valid signature. That is the expected expiry result, not a reason to bypass the date check. A later key rotation can also change the fresh API signature result. The browser's current-time mode uses the real clock too, but still uses its archived key; the API resolves the current key. An API or network error is unavailable evidence, not proof of expiry or a successful match.
 
 ```js title="check-source.mjs"
 const base = 'https://docs.did.is/demo/official-source-20261103';
@@ -91,3 +135,5 @@ if (!matched) process.exitCode = 1;
 To compare the controlled negatives, change `original-request.json` to `tampered-request.json`, `wrong-issuer-request.json` or `expired-request.json`. None should match the expected source policy. An HTTP or network failure means **unknown**, never verified. Public limits apply: 20 standard requests per minute and a separate 10-per-minute intensive budget. Do not loop these requests.
 
 For broader integrations, see [linked websites](/build/linked-websites/), [credential verification](/build/credentials/) and [first recipes](/start/recipes/). Each check has a specific boundary; no single badge replaces the evidence.
+
+</details>

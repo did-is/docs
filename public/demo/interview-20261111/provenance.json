@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-11-11T10:11:34Z",
+  "subject": "did:web:did.is",
+  "files": [
+    {
+      "file": "graph.json",
+      "sha256": "6cb0202483613485e5f2d6be180289fad8ac1b6b353fc50804419e187e500e1e",
+      "bytes": 17801,
+      "observedAt": "2026-11-11T10:11:34Z",
+      "source": "https://did.is/api/v1/graph/did%3Aweb%3Adid.is",
+      "evidenceClass": "recorded-public-api-response"
+    },
+    {
+      "file": "resolution.json",
+      "sha256": "4a564ded4c80b6c91016481aa33b1ab3c41ebfe31f62d311c388815c6cdaa9d8",
+      "bytes": 22702,
+      "observedAt": "2026-11-11T10:11:34Z",
+      "source": "https://did.is/api/v1/resolve/did%3Aweb%3Adid.is",
+      "evidenceClass": "recorded-public-api-response"
+    }
+  ],
+  "limitations": [
+    "Saved public API responses, not a current lookup or independently signed capture.",
+    "Each file is its own response; shared timestamps do not make separate requests atomic.",
+    "File hashes identify the saved bytes, not a trusted observation time.",
+    "The resolver graph does not include the separate signed-statement or delegation examples."
+  ]
+}
